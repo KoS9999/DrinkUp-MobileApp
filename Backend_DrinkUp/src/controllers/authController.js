@@ -14,6 +14,9 @@ exports.register = async (req, res) => {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); 
       await OTP.create({ email, code, expiresAt }); 
+      console.log('Sending OTP to:', email);
+      console.log('EMAIL_USER:', process.env.EMAIL_USER);
+      console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD);
       await sendOTP(email, code); 
 
       return res.status(200).json({ message: 'OTP sent to email. Please verify.' });
@@ -40,18 +43,33 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
+    console.log('Login attempt with email:', email);
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('User found:', user);
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!isPasswordValid) {
+      console.log('Invalid credentials');
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
+    console.log('Password valid, generating token...');
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+
+    console.log('Token generated:', token);
     res.status(200).json({ token, user });
   } catch (error) {
+    console.error('Error logging in:', error);
     res.status(500).json({ message: 'Error logging in', error });
   }
 };
+
 
 // Forgot Password with OTP verification
 exports.forgotPassword = async (req, res) => {
