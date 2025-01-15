@@ -9,7 +9,7 @@ exports.register = async (req, res) => {
   try {
     if (!otp) {
       const existingUser = await User.findOne({ email });
-      if (existingUser) return res.status(400).json({ message: 'Email already exists' });
+      if (existingUser) return res.status(400).json({ message: 'Email đã tồn tại' });
 
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); 
@@ -19,12 +19,12 @@ exports.register = async (req, res) => {
       console.log('EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD);
       await sendOTP(email, code); 
 
-      return res.status(200).json({ message: 'OTP sent to email. Please verify.' });
+      return res.status(200).json({ message: 'OTP đã gửi đến email. Vui lòng xác nhận' });
     }
 
     const otpRecord = await OTP.findOne({ email, code: otp });
     if (!otpRecord || otpRecord.expiresAt < Date.now()) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
+      return res.status(400).json({ message: 'OTP không hợp lệ hoặc hết hạn' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -32,10 +32,10 @@ exports.register = async (req, res) => {
     await user.save();
     await OTP.deleteOne({ email, code: otp });
 
-    res.status(201).json({ message: 'User registered successfully' });
+    res.status(201).json({ message: 'Người dùng đăng ký thành công' });
   } catch (error) {
     console.error(error); 
-    res.status(500).json({ message: 'Error registering user', error });
+    res.status(500).json({ message: 'Lỗi khi đang đăng ký người dùng', error });
   }
 };
 
@@ -43,20 +43,20 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    console.log('Login attempt with email:', email);
+    console.log('Đăng nhập với Email: ', email);
 
     const user = await User.findOne({ email });
     if (!user) {
-      console.log('User not found');
-      return res.status(404).json({ message: 'User not found' });
+      console.log('Không tìm thấy người dùng');
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
     }
 
     console.log('User found:', user);
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      console.log('Invalid credentials');
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('Thông tin đăng nhập không hợp lệ');
+      return res.status(401).json({ message: 'Thông tin đăng nhập không hợp lệ' });
     }
 
     console.log('Password valid, generating token...');
@@ -71,33 +71,37 @@ exports.login = async (req, res) => {
 };
 
 
-// Forgot Password with OTP verification
 exports.forgotPassword = async (req, res) => {
-    const { email, newPassword, otp } = req.body;
-    try {
-      if (!otp) {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: 'User not found' });
-  
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-        await OTP.create({ email, code, expiresAt });
-        await sendOTP(email, code);
-  
-        return res.status(200).json({ message: 'OTP sent to email. Please verify.' });
-      }
-  
-      const otpRecord = await OTP.findOne({ email, code: otp });
-      if (!otpRecord || otpRecord.expiresAt < Date.now()) {
-        return res.status(400).json({ message: 'Invalid or expired OTP' });
-      }
-  
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await User.updateOne({ email }, { password: hashedPassword });
-      await OTP.deleteOne({ email, code: otp });
-  
-      res.status(200).json({ message: 'Password updated successfully' });
-    } catch (error) {
-      res.status(500).json({ message: 'Error resetting password', error });
+  const { email, newPassword, confirmPassword, otp } = req.body;
+  try {
+    if (!otp) {
+      const user = await User.findOne({ email });
+      if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); 
+      await OTP.create({ email, code, expiresAt });
+      await sendOTP(email, code);
+
+      return res.status(200).json({ message: 'OTP đã gửi đến email. Vui lòng xác nhận' });
     }
-  };
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'Mật khẩu không khớp' });
+    }
+
+    const otpRecord = await OTP.findOne({ email, code: otp });
+    if (!otpRecord || otpRecord.expiresAt < Date.now()) {
+      return res.status(400).json({ message: 'OTP không hợp lệ hoặc hết hạn' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await User.updateOne({ email }, { password: hashedPassword });
+    await OTP.deleteOne({ email, code: otp });
+
+    res.status(200).json({ message: 'Cập nhật mật khẩu thành công' });
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi khi đặt lại mật khẩu', error });
+  }
+};
+

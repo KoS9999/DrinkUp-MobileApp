@@ -4,72 +4,78 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator'; 
 
-const RegisterScreen = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1);
-  const [error, setError] = useState('');
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Register'>>();
+type ForgotPasswordScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ForgotPassword'>;
 
-  const handleRegister = async () => {
-    if (!name || !email || !password || !phone) {
+const ForgotPasswordScreen = () => {
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [step, setStep] = useState(1); 
+  const [error, setError] = useState('');
+  const navigation = useNavigation<ForgotPasswordScreenNavigationProp>();
+
+  const handleRequestOtp = async () => {
+    if (!email) {
+      setError('Vui lòng nhập email.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.message || 'Yêu cầu OTP thất bại.');
+        return;
+      }
+
+      setError('');
+      setStep(2); 
+    } catch (error) {
+      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+      console.error('OTP request error:', error);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!otp || !newPassword || !confirmPassword) {
       setError('Tất cả các trường đều bắt buộc.');
       return;
     }
 
-    try {
-      const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password, phone }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.message || 'Đăng ký thất bại.');
-        return;
-      }
-
-      setError('');
-      setStep(2); // Move to OTP step
-    } catch (error) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
-      console.error('Register error:', error);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    if (!otp) {
-      setError('Vui lòng nhập mã OTP.');
+    if (newPassword !== confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp.');
       return;
     }
 
     try {
-      const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
+      const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password, phone, otp }),
+        body: JSON.stringify({ email, otp, newPassword, confirmPassword }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        setError(errorData.message || 'Xác thực OTP thất bại.');
+        setError(errorData.message || 'Đặt lại mật khẩu thất bại.');
         return;
       }
 
       setError('');
-      console.log('Registration successful');
-      navigation.navigate('Login'); // Chuyển sang màn hình Login
+      console.log('Password reset successful');
+      navigation.navigate('Login'); 
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
-      console.error('OTP verification error:', error);
+      console.error('Password reset error:', error);
     }
   };
 
@@ -77,14 +83,7 @@ const RegisterScreen = () => {
     <View style={styles.container}>
       {step === 1 ? (
         <>
-          <Text style={styles.title}>Đăng Ký</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Họ và Tên"
-            value={name}
-            onChangeText={setName}
-          />
+          <Text style={styles.title}>Quên Mật Khẩu</Text>
 
           <TextInput
             style={styles.input}
@@ -94,31 +93,15 @@ const RegisterScreen = () => {
             keyboardType="email-address"
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Mật khẩu"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Số điện thoại"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
-            <Text style={styles.registerButtonText}>Đăng Ký</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={handleRequestOtp}>
+            <Text style={styles.actionButtonText}>Yêu Cầu OTP</Text>
           </TouchableOpacity>
         </>
       ) : (
         <>
-          <Text style={styles.title}>Nhập OTP</Text>
+          <Text style={styles.title}>Đặt Lại Mật Khẩu</Text>
 
           <TextInput
             style={styles.input}
@@ -128,10 +111,26 @@ const RegisterScreen = () => {
             keyboardType="numeric"
           />
 
+          <TextInput
+            style={styles.input}
+            placeholder="Mật khẩu mới"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Xác nhận mật khẩu"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
+
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <TouchableOpacity style={styles.registerButton} onPress={handleVerifyOtp}>
-            <Text style={styles.registerButtonText}>Xác Thực</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={handleResetPassword}>
+            <Text style={styles.actionButtonText}>Đặt Lại Mật Khẩu</Text>
           </TouchableOpacity>
         </>
       )}
@@ -162,7 +161,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#fff',
   },
-  registerButton: {
+  actionButton: {
     width: '100%',
     height: 50,
     backgroundColor: '#007bff',
@@ -170,7 +169,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  registerButtonText: {
+  actionButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
@@ -181,4 +180,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RegisterScreen;
+export default ForgotPasswordScreen;
