@@ -1,0 +1,41 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/Airbnb-Cereal-App-Black.ttf",
+      "sha1": "334440b594f61902477ce317b21433679d1e8c90"
+    },
+    {
+      "path": "assets/fonts/Airbnb-Cereal-App-Bold.ttf",
+      "sha1": "8b72e86e3ddac24212a0ada974e78b93b94abe5e"
+    },
+    {
+      "path": "assets/fonts/Airbnb-Cereal-App-Book.ttf",
+      "sha1": "045e0ba2a5c38e256fc66ff0d65da8435f93eb77"
+    },
+    {
+      "path": "assets/fonts/Airbnb-Cereal-App-ExtraBold.ttf",
+      "sha1": "1e2154628bb98e7e7d709e02980764344b0769b0"
+    },
+    {
+      "path": "assets/fonts/Airbnb-Cereal-App-Light.ttf",
+      "sha1": "df130dbef2b1c112740f266aec53459dbd425ad3"
+    },
+    {
+      "path": "assets/fonts/Airbnb-Cereal-App-Medium.ttf",
+      "sha1": "74ec6154c9867b133ae6afe9aca87c1951af1f0b"
+    },
+    {
+      "path": "assets/fonts/Airbnb-Plus-Script-App-Regular.ttf",
+      "sha1": "d592aa7b4d5f651b74bdb52c8f3efe52a4c2a555"
+    },
+    {
+      "path": "assets/fonts/Airglyphs.otf",
+      "sha1": "f314e91b01f668123bd2f2b1b229d46406d2f411"
+    },
+    {
+      "path": "assets/fonts/AirMojix.ttf",
+      "sha1": "4398d7171f9d03c59ff6933ac69a349ee82460bb"
+    }
+  ]
+}
