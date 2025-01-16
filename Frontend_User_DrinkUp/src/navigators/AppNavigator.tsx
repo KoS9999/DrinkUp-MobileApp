@@ -5,9 +5,12 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import SplashScreen from '../screens/SplashScreen';
+import OnBoardingScreen from '../screens/OnBoardingScreen';
+import HomeScreen from '../screens/HomeScreen';
 
 export type RootStackParamList = {
   SplashScreen: undefined;
+  OnBoardingScreen: undefined;
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
@@ -20,9 +23,10 @@ export default function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator  initialRouteName="SplashScreen">
         <Stack.Screen options={{ headerShown: false}} name="SplashScreen" component={SplashScreen} />
+        <Stack.Screen options={{ headerShown: false}} name="OnBoardingScreen" component={OnBoardingScreen} />
 
         {/* Tạm thời để headerShown của Login là false */}
-        <Stack.Screen options={{ headerShown: false}} name="Login" component={LoginScreen} /> 
+        <Stack.Screen options={{ headerTitle: ''}} name="Login" component={LoginScreen} /> 
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       </Stack.Navigator>

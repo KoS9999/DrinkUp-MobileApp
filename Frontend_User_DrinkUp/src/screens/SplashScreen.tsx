@@ -11,7 +11,7 @@ const SplashScreen = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigation.navigate('Login'); // Chuyển đến màn hình Login
+      navigation.navigate('OnBoardingScreen'); // Chuyển đến màn hình Login
     }, 1500); // 1.5 giây
 
     return () => clearTimeout(timer); // Xóa timer khi component unmount
