@@ -23,6 +23,18 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-font",
+        {
+          "fonts": [
+            {
+              "Pacifico-Regular": "../assets/fonts/Pacifico-Regular.ttf"
+            }
+          ]
+        }
+      ]
+    ]
   }
 }
