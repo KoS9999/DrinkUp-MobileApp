@@ -30,7 +30,9 @@
         {
           "fonts": [
             {
-              "Pacifico-Regular": "../assets/fonts/Pacifico-Regular.ttf"
+              "Pacifico-Regular": "../assets/fonts/Pacifico-Regular.ttf",
+              "Oswald-Regular": "../assets/fonts/Oswald-Regular.ttf",
+              "Oswald-Medium": "../assets/fonts/Oswald-Medium.ttf"
             }
           ]
         }

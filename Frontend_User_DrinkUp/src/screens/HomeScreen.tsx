@@ -1,16 +1,43 @@
-import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity , ScrollView } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
+import { useNavigation } from '@react-navigation/native';
+
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
+
 
 const HomeScreen = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const [greeting, setGreeting] = useState('');
+
+  useEffect(() => {
+    const updateGreeting = () => {
+      setGreeting(getGreeting());
+    };
+
+    updateGreeting();// cập nhật lời chào ngay khi componet được render
+    const interval = setInterval(updateGreeting, 60000); //Cập nhật mỗi phút
+
+    return () => clearInterval(interval);// Dọn dẹp khi component bị hủy
+  }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'CHÀO BUỔI SÁNG, DRINKUP-ER';
+    if (hour >= 12 && hour < 18) return 'CHÀO BUỔI CHIỀU, DRINKUP-ER';
+    if (hour >= 18 && hour < 22) return 'CHÀO BUỔI TỐI, DRINKUP-ER';
+    return 'CHÀO BUỔI ĐÊM, DRINKUP-ER';
+  };
+
   const [fontsLoaded] = useFonts({
-      "Oswald-Regular": require("../../assets/fonts/Oswald-Regular.ttf"),
-      "Oswald-Medium": require("../../assets/fonts/Oswald-Medium.ttf")
-    });
+    "Oswald-Regular": require("../../assets/fonts/Oswald-Regular.ttf"),
+    "Oswald-Medium": require("../../assets/fonts/Oswald-Medium.ttf")
+  });
 
   return (
     <View style={styles.container}>
@@ -18,11 +45,11 @@ const HomeScreen = () => {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image
-            source={require ('../assets/images/logo-drinkup-1.png')}
+            source={require('../assets/images/logo-drinkup-1.png')}
             style={styles.profileImage}
           />
           <View>
-            <Text style={styles.greeting}>CHÀO BUỔI SÁNG, DRINKUP-ER</Text>
+            <Text style={styles.greeting}>{greeting}</Text>
             <Text style={styles.role}>Khách</Text>
           </View>
         </View>
@@ -31,14 +58,14 @@ const HomeScreen = () => {
       </View>
 
       {/* Đăng ký / Đăng nhập */}
-      <TouchableOpacity style={styles.authButton}>
-        <Text style={styles.authButtonText}>ĐĂNG KÝ/ ĐĂNG NHẬP</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
+        <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
       </TouchableOpacity>
 
       {/* Carousel */}
       <View style={styles.carousel}>
         <Image
-          source={require ('../assets/images/slide-1.png')}
+          source={require('../assets/images/slide-1.png')}
           style={styles.carouselImage}
         />
         <View style={styles.indicators}>
@@ -117,10 +144,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 4 }, 
-    shadowOpacity: 0.3, 
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 6, 
+    elevation: 6,
   },
   authButtonText: {
     fontFamily: "Oswald-Regular",
@@ -158,7 +185,7 @@ const styles = StyleSheet.create({
     // borderTopLeftRadius: 24,
     // borderTopRightRadius: 24,
     position: 'absolute',
-    bottom: 0, 
+    bottom: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
