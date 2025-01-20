@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigators/AppNavigator'; 
+import { RootStackParamList } from '../navigators/AppNavigator';
+import { Entypo } from '@expo/vector-icons';
 
 type ForgotPasswordScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ForgotPassword'>;
 
@@ -11,7 +12,7 @@ const ForgotPasswordScreen = () => {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [step, setStep] = useState(1); 
+  const [step, setStep] = useState(1);
   const [error, setError] = useState('');
   const navigation = useNavigation<ForgotPasswordScreenNavigationProp>();
 
@@ -37,7 +38,7 @@ const ForgotPasswordScreen = () => {
       }
 
       setError('');
-      setStep(2); 
+      setStep(2);
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
       console.error('OTP request error:', error);
@@ -56,12 +57,12 @@ const ForgotPasswordScreen = () => {
     }
 
     try {
-      const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
+      const response = await fetch('http://192.168.2.6:5001/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, otp, newPassword, confirmPassword }),
+        body: JSON.stringify({ email, otp, newPassword }),
       });
 
       if (!response.ok) {
@@ -72,7 +73,7 @@ const ForgotPasswordScreen = () => {
 
       setError('');
       console.log('Password reset successful');
-      navigation.navigate('Login'); 
+      navigation.navigate('Login');
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
       console.error('Password reset error:', error);
@@ -81,17 +82,23 @@ const ForgotPasswordScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Image source={require('../assets/images/logo-drinkup.png')} style={styles.logo} />
+
       {step === 1 ? (
         <>
           <Text style={styles.title}>Quên Mật Khẩu</Text>
+          <Text style={styles.subtitle}>Nhập email để nhận mã OTP</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
+          <View style={styles.inputContainer}>
+            <Entypo name="email" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+            />
+          </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -102,30 +109,40 @@ const ForgotPasswordScreen = () => {
       ) : (
         <>
           <Text style={styles.title}>Đặt Lại Mật Khẩu</Text>
+          <Text style={styles.subtitle}>Nhập mã OTP và mật khẩu mới</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Mã OTP"
-            value={otp}
-            onChangeText={setOtp}
-            keyboardType="numeric"
-          />
+          <View style={styles.inputContainer}>
+            <Entypo name="lock" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Mã OTP"
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="numeric"
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Mật khẩu mới"
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry
-          />
+          <View style={styles.inputContainer}>
+            <Entypo name="lock" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Mật khẩu mới"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+            />
+          </View>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Xác nhận mật khẩu"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-          />
+          <View style={styles.inputContainer}>
+            <Entypo name="lock" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Xác nhận mật khẩu"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+          </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -144,14 +161,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fff',
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    marginBottom: 14,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 24,
+    marginBottom: 8,
   },
-  input: {
+  subtitle: {
+    fontSize: 16,
+    color: '#502419',
+    marginBottom: 32,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     width: '100%',
     height: 50,
     borderWidth: 1,
@@ -159,15 +188,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f9f9',
+  },
+  icon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    height: '100%',
   },
   actionButton: {
     width: '100%',
     height: 50,
-    backgroundColor: '#007bff',
+    backgroundColor: '#7EA172',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 20,
+    marginBottom: 16,
   },
   actionButtonText: {
     color: '#fff',
