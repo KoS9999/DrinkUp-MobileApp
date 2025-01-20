@@ -63,6 +63,10 @@ const HomeScreen = () => {
         <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity onPress={() => navigation.navigate('OTPScreen')} style={styles.authButton}>
+        <Text style={styles.authButtonText}>OTP</Text>
+      </TouchableOpacity>
+
       {/* Carousel */}
       <View style={styles.carousel}>
         <Image
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   greeting: {
-    fontFamily: "Oswald-Regular",
+    //fontFamily: "Oswald-Regular",
     fontSize: 14,
     color: '#A2730C',
   },
@@ -151,7 +155,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   authButtonText: {
-    fontFamily: "Oswald-Regular",
+    //fontFamily: "Oswald-Regular",
     fontSize: 16,
     color: '#FFFFFF',
     alignItems: 'center',

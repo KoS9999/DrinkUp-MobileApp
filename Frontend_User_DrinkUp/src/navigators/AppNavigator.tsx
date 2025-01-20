@@ -8,6 +8,7 @@ import SplashScreen from '../screens/SplashScreen';
 import OnBoardingScreen from '../screens/OnBoardingScreen';
 import HomeScreen from '../screens/HomeScreen';
 import PolicyScreen from '../screens/PolicyScreen';
+import OTPScreen from '../screens/OTPScreen';
 
 export type RootStackParamList = {
   SplashScreen: undefined;
@@ -16,7 +17,8 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  PolicyScreen: undefined
+  PolicyScreen: undefined;
+  OTPScreen: undefined
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -31,6 +33,7 @@ export default function AppNavigator() {
         {/* Tạm thời để headerShown của Login là false */}
         <Stack.Screen options={{ headerTitle: '', headerShown: false}} name="Login" component={LoginScreen} /> 
         <Stack.Screen options={{ headerShown: false}} name="Register" component={RegisterScreen} />
+        <Stack.Screen options={{ headerShown: false}} name="OTPScreen" component={OTPScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="PolicyScreen" component={PolicyScreen} />
       </Stack.Navigator>
