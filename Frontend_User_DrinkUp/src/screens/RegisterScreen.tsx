@@ -78,86 +78,109 @@ const RegisterScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/images/logo-drinkup.png')} style={styles.logo}></Image>
-      <Text style={styles.title}>Đăng ký</Text>
-      <Text style={styles.subtitle}>Đăng ký trở thành DrinkUp-er</Text>
-      <View style={styles.inputContainer}>
-        <FontAwesome name="user-o" size={24} color="#888" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Họ tên"
-          value={name}
-          onChangeText={setName}
-        />
-      </View>
+      {step === 1 ? (
+        <>
+          <Image source={require('../assets/images/logo-drinkup.png')} style={styles.logo}></Image>
+          <Text style={styles.title}>Đăng ký</Text>
+          <Text style={styles.subtitle}>Đăng ký trở thành DrinkUp-er</Text>
+          <View style={styles.inputContainer}>
+            <FontAwesome name="user-o" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Họ tên"
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
 
-      <View style={styles.inputContainer}>
-        <Entypo name="email" size={24} color="#888" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-        />
-      </View>
+          <View style={styles.inputContainer}>
+            <Entypo name="email" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+            />
+          </View>
 
-      <View style={styles.inputContainer}>
-        <Entypo name="lock" size={24} color="#888" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Mật khẩu"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!showPassword}
-        />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Entypo
-            name={showPassword ? "eye" : "eye-with-line"}
-            size={24}
-            color="#888"
-            style={styles.icon}
-          />
-        </TouchableOpacity>
-      </View>
+          <View style={styles.inputContainer}>
+            <Entypo name="lock" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Mật khẩu"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Entypo
+                name={showPassword ? "eye" : "eye-with-line"}
+                size={24}
+                color="#888"
+                style={styles.icon}
+              />
+            </TouchableOpacity>
+          </View>
 
-      <View style={styles.inputContainer}>
-        <FontAwesome name="phone" size={24} color="#888" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Số điện thoại"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-        />
-      </View>
+          <View style={styles.inputContainer}>
+            <FontAwesome name="phone" size={24} color="#888" style={styles.icon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Số điện thoại"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
 
-      <View style={styles.rowContainer}>
-        <View style={styles.acceptPolicyContainer}>
-          <TouchableOpacity onPress={() => setAcceptPolicy(!acceptPolicy)}>
-            <FontAwesome name={acceptPolicy ? "check-square-o" : "square-o"} size={24} color={acceptPolicy ? "green" : "#888"} />
-          </TouchableOpacity>
+          <View style={styles.rowContainer}>
+            <View style={styles.acceptPolicyContainer}>
+              <TouchableOpacity onPress={() => setAcceptPolicy(!acceptPolicy)}>
+                <FontAwesome name={acceptPolicy ? "check-square-o" : "square-o"} size={24} color={acceptPolicy ? "green" : "#888"} />
+              </TouchableOpacity>
 
-          <Text style={styles.footerText}>
-            <Text style={styles.acceptPolicyText}>Tôi đồng ý với{' '}</Text>
-              <Text style={styles.signUpText} onPress={() => navigation.navigate('PolicyScreen')}>
-                Điều khoản dịch vụ{' '}
+              <Text style={styles.footerText}>
+                <Text style={styles.acceptPolicyText}>Tôi đồng ý với{' '}</Text>
+                <Text style={styles.signUpText} onPress={() => navigation.navigate('PolicyScreen')}>
+                  Điều khoản dịch vụ{' '}
+                </Text>
+                <Text style={styles.acceptPolicyText}> và </Text>
+
+                <Text style={styles.signUpText} onPress={() => navigation.navigate('PolicyScreen')}>
+                  Chính sách quyền riêng tư.
+                </Text>
               </Text>
-              <Text style={styles.acceptPolicyText}> và </Text>
-            
-            <Text style={styles.signUpText} onPress={() => navigation.navigate('PolicyScreen')}>
-              Chính sách quyền riêng tư.
-            </Text>
-          </Text>
-        </View>
-      </View>
+            </View>
+          </View>
 
-    
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-      <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
-        <Text style={styles.loginButtonText}>Đăng ký</Text>
-      </TouchableOpacity>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <TouchableOpacity style={styles.loginButton} onPress={handleRegister}>
+            <Text style={styles.loginButtonText}>Đăng ký</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.title}>Nhập OTP</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Mã OTP"
+            value={otp}
+            onChangeText={setOtp}
+            keyboardType="numeric"
+          />
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          {/* <TouchableOpacity style={styles.registerButton} onPress={handleVerifyOtp}>
+            <Text style={styles.registerButtonText}>Xác Thực</Text>
+          </TouchableOpacity> */}
+
+        </>
+      )}
 
       <Text style={styles.footerText}>
         Bạn đã có tài khoản?{' '}
@@ -229,7 +252,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#888',
     fontSize: 15,
-    lineHeight:20 
+    lineHeight: 20
   },
   forgotPassword: {
     color: '#985446',

@@ -152,8 +152,10 @@ const styles = StyleSheet.create({
   },
   authButtonText: {
     fontFamily: "Oswald-Regular",
-    fontSize: 15,
+    fontSize: 16,
     color: '#FFFFFF',
+    alignItems: 'center',
+    alignContent: 'center'
   },
   carousel: {
     alignItems: 'center',
