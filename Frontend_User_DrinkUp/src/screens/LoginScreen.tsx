@@ -13,6 +13,7 @@ const LoginScreen = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -81,14 +82,11 @@ const LoginScreen = () => {
 
       <View style={styles.rowContainer}>
         <View style={styles.rememberMeContainer}>
-          <TouchableOpacity>
-          <FontAwesome name="square-o" size={24} color="#888" />
+          <TouchableOpacity onPress={() =>setRememberMe(!rememberMe)}>
+            <FontAwesome name={ rememberMe? "check-square-o" : "square-o"} size={24} color={rememberMe? "green":"#888"}/>
           </TouchableOpacity>
           <Text style={styles.rememberMeText}>Remember Me</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-          <Text style={styles.forgotPassword}>Forgot Password?</Text>
-        </TouchableOpacity>
       </View>
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -97,10 +95,16 @@ const LoginScreen = () => {
         <Text style={styles.loginButtonText}>Đăng nhập</Text>
       </TouchableOpacity>
 
+      <View style={styles.rowContainer}>
+        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={styles.forgotPassword}>Quên mật khẩu?</Text>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.footerText}>
-        Don’t have an account?{' '}
+        Bạn chưa có tài khoản?{' '}
         <Text style={styles.signUpText} onPress={() => navigation.navigate('Register')}>
-          Sign Up
+          Đăng ký
         </Text>
       </Text>
 
@@ -117,9 +121,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   logo: {
-    width: 200,
-    height: 200,
-    marginBottom: 14,
+    width: 150,
+    height: 150,
+    //marginBottom: 5,
+    
   },
   title: {
     fontSize: 24,
@@ -152,7 +157,8 @@ const styles = StyleSheet.create({
   },
   rowContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: '100%',
     marginBottom: 16,
   },
@@ -163,10 +169,11 @@ const styles = StyleSheet.create({
   rememberMeText: {
     marginLeft: 8,
     color: '#888',
+    fontSize: 15
   },
   forgotPassword: {
-    color: '#007bff',
-    fontSize: 14,
+    color: '#985446',
+    fontSize: 15,
   },
   loginButton: {
     width: '100%',
@@ -179,16 +186,17 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#888',
+    marginBottom: -20
   },
   signUpText: {
-    color: '#007bff',
-    fontWeight: 'bold',
+    color: '#985446',
+    textDecorationLine: 'underline',
   },
   errorText: {
     color: 'red',

@@ -36,7 +36,8 @@ const HomeScreen = () => {
 
   const [fontsLoaded] = useFonts({
     "Oswald-Regular": require("../../assets/fonts/Oswald-Regular.ttf"),
-    "Oswald-Medium": require("../../assets/fonts/Oswald-Medium.ttf")
+    "Oswald-Medium": require("../../assets/fonts/Oswald-Medium.ttf"),
+    "Pacifico-Regular": require("../../assets/fonts/Pacifico-Regular.ttf"),
   });
 
   return (
@@ -105,7 +106,6 @@ const HomeScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 25,
     flex: 1,
     backgroundColor: 'white',
   },
@@ -114,6 +114,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    marginTop: 30,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
   },
   authButtonText: {
     fontFamily: "Oswald-Regular",
-    fontSize: 16,
+    fontSize: 15,
     color: '#FFFFFF',
   },
   carousel: {

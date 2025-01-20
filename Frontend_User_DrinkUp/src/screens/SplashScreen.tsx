@@ -18,7 +18,7 @@ const SplashScreen = () => {
     if (fontsLoaded) {
       const timer = setTimeout(() => {
         navigation.navigate('OnBoardingScreen');
-      }, 1500);
+      }, 2000);
 
       return () => clearTimeout(timer);
     }
@@ -71,6 +71,7 @@ const styles = StyleSheet.create({
     height: appInfo.sizes.WIDTH * 0.5,
     resizeMode: 'contain',
     marginBottom: 10, // Khoảng cách giữa logo và tên website
+    marginTop: 90
   },
   websiteName: {
     fontFamily: "Pacifico-Regular",
