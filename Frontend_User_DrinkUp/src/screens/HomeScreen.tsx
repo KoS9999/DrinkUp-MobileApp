@@ -44,7 +44,7 @@ const HomeScreen = () => {
     if (hour >= 5 && hour < 12) return 'CHÀO BUỔI SÁNG, DRINKUP-ER';
     if (hour >= 12 && hour < 18) return 'CHÀO BUỔI CHIỀU, DRINKUP-ER';
     if (hour >= 18 && hour < 22) return 'CHÀO BUỔI TỐI, DRINKUP-ER';
-    return 'CHÀO BUỔI ĐÊM, DRINKUP-ER';
+    return 'CHÚC NGỦ NGON, DRINKUP-ER';
   };
 
   const [fontsLoaded] = useFonts({
@@ -63,8 +63,8 @@ const HomeScreen = () => {
             style={styles.profileImage}
           />
           <View>
-            <Text style={styles.greeting}>Xin chào!</Text>
-            <Text style={styles.role}>{isLoggedIn ? 'Đã đăng nhập' : 'Khách'}</Text>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.role}>{isLoggedIn ? 'Thành viên' : 'Khách'}</Text>
           </View>
         </View>
         <MaterialIcons name="notifications-on" size={24} color="#6E3816" />
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   greeting: {
-    fontFamily: "Oswald-Regular",
+    //fontFamily: "Oswald-Regular",
     fontSize: 14,
     color: '#A2730C',
   },
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   authButtonText: {
-    fontFamily: "Oswald-Regular",
+    //fontFamily: "Oswald-Regular",
     fontSize: 16,
     color: '#FFFFFF',
     alignItems: 'center',
