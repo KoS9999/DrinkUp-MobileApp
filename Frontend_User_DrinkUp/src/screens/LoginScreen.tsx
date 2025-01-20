@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { FontAwesome5, FontAwesome, Entypo } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -19,7 +20,7 @@ const LoginScreen = () => {
       setError('Email và mật khẩu không được để trống.');
       return;
     }
-
+  
     try {
       const response = await fetch('http://192.168.2.6:5001/api/auth/login', {
         method: 'POST',
@@ -28,21 +29,24 @@ const LoginScreen = () => {
         },
         body: JSON.stringify({ email, password }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.message || 'Đăng nhập thất bại.');
         return;
       }
-
+  
       const data = await response.json();
       console.log('Login successful:', data);
       setError('');
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      navigation.navigate('HomeScreen');
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
       console.error('Login error:', error);
     }
   };
+  
 
   return (
     <View style={styles.container}>
