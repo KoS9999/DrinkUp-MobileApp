@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
@@ -12,7 +12,8 @@ const RegisterScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [acceptPolicy, setAcceptPolicy] = useState(false);
-  const [otp, setOtp] = useState('');
+  //const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']); // Định nghĩa kiểu là mảng chuỗi
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Register'>>();
@@ -24,7 +25,8 @@ const RegisterScreen = () => {
     }
 
     try {
-      const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
+      //const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
+      const response = await fetch('http://192.168.1.133:5001/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,6 +48,19 @@ const RegisterScreen = () => {
     }
   };
 
+  // Sử dụng useRef với kiểu dữ liệu TextInput hoặc null
+  const refs = useRef<(TextInput | null)[]>([]);
+
+  const handleInputChange = (text: string, index: number) => {
+    const newOtp = [...otp];
+    newOtp[index] = text;
+    setOtp(newOtp);
+
+    if (text && index < 5) {
+      refs.current[index + 1]?.focus(); // Focus đến ô tiếp theo
+    }
+  };
+
   const handleVerifyOtp = async () => {
     if (!otp) {
       setError('Vui lòng nhập mã OTP.');
@@ -53,7 +68,8 @@ const RegisterScreen = () => {
     }
 
     try {
-      const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
+      //const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
+      const response = await fetch('http://192.168.1.133:5001/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,6 +85,7 @@ const RegisterScreen = () => {
 
       setError('');
       console.log('Registration successful');
+      Alert.alert('OTP Verified', 'Registration successful');
       navigation.navigate('Login'); // Chuyển sang màn hình Login
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
@@ -163,25 +180,36 @@ const RegisterScreen = () => {
         </>
       ) : (
         <>
-          <Text style={styles.title}>Nhập OTP</Text>
+          <View style={styles.containerOTP}>
+            <Image source={require('../assets/images/image-verify-1.png')} style={styles.logoOTP}></Image>
+            <Text style={styles.title}>Nhập OTP</Text>
+            <Text style={styles.subtitle}>Kiểm tra mã xác nhận trong email của bạn</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Mã OTP"
-            value={otp}
-            onChangeText={setOtp}
-            keyboardType="numeric"
-          />
+            <View style={styles.otpContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  style={styles.otpInput}
+                  keyboardType="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={(text) => handleInputChange(text, index)}
+                  ref={(ref) => (refs.current[index] = ref)} // Gắn ref
+                />
+              ))}
+            </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            <TouchableOpacity onPress={() => Alert.alert('Code Resent', 'The code has been sent again!')}>
+              <Text style={styles.resendText}>Chưa nhận được OTP? <Text style={styles.resendLink}>Gửi lại</Text></Text>
+            </TouchableOpacity>
 
-          {/* <TouchableOpacity style={styles.registerButton} onPress={handleVerifyOtp}>
-            <Text style={styles.registerButtonText}>Xác Thực</Text>
-          </TouchableOpacity> */}
+            <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyOtp}>
+              <Text style={styles.verifyButtonText}>Verify</Text>
+            </TouchableOpacity>
+          </View>
 
         </>
       )}
-
       <Text style={styles.footerText}>
         Bạn đã có tài khoản?{' '}
         <Text style={styles.signUpText} onPress={() => navigation.navigate('Login')}>
@@ -216,6 +244,57 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#502419',
     marginBottom: 32,
+  },
+  containerOTP: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  logoOTP: {
+    width: 150,
+    height: 150,
+    //marginBottom: 5,
+    marginTop: 10
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  otpInput: {
+    width: 40,
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 18,
+    marginHorizontal: 5,
+  },
+  resendText: {
+    fontSize: 15,
+    color: '#888',
+  },
+  resendLink: {
+    fontSize: 15,
+    color: '#985446',
+    textDecorationLine: 'underline',
+  },
+  verifyButton: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#6c757d',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  verifyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   inputContainer: {
     flexDirection: 'row',

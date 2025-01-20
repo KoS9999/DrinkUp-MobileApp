@@ -7,6 +7,8 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
 
@@ -14,16 +16,27 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScr
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [greeting, setGreeting] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
 
   useEffect(() => {
     const updateGreeting = () => {
       setGreeting(getGreeting());
     };
 
-    updateGreeting();// cập nhật lời chào ngay khi componet được render
-    const interval = setInterval(updateGreeting, 60000); //Cập nhật mỗi phút
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000);
 
-    return () => clearInterval(interval);// Dọn dẹp khi component bị hủy
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
+      setIsLoggedIn(loggedIn === 'true');
+    };
+
+    checkLoginStatus();
   }, []);
 
   const getGreeting = () => {
@@ -31,7 +44,7 @@ const HomeScreen = () => {
     if (hour >= 5 && hour < 12) return 'CHÀO BUỔI SÁNG, DRINKUP-ER';
     if (hour >= 12 && hour < 18) return 'CHÀO BUỔI CHIỀU, DRINKUP-ER';
     if (hour >= 18 && hour < 22) return 'CHÀO BUỔI TỐI, DRINKUP-ER';
-    return 'CHÀO BUỔI ĐÊM, DRINKUP-ER';
+    return 'CHÚC NGỦ NGON, DRINKUP-ER';
   };
 
   const [fontsLoaded] = useFonts({
@@ -51,7 +64,7 @@ const HomeScreen = () => {
           />
           <View>
             <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.role}>Khách</Text>
+            <Text style={styles.role}>{isLoggedIn ? 'Thành viên' : 'Khách'}</Text>
           </View>
         </View>
         <MaterialIcons name="notifications-on" size={24} color="#6E3816" />
@@ -59,13 +72,19 @@ const HomeScreen = () => {
       </View>
 
       {/* Đăng ký / Đăng nhập */}
-      <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
-        <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('OTPScreen')} style={styles.authButton}>
+      {/* {!isLoggedIn && (
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
+          <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
+        </TouchableOpacity>
+      )} */}
+      {(
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
+          <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
+        </TouchableOpacity>
+      )}
+      {/* <TouchableOpacity onPress={() => navigation.navigate('OTPScreen')} style={styles.authButton}>
         <Text style={styles.authButtonText}>OTP</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Carousel */}
       <View style={styles.carousel}>
