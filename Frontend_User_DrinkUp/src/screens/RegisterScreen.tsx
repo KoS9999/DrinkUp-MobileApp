@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
@@ -13,10 +13,35 @@ const RegisterScreen = () => {
   const [phone, setPhone] = useState('');
   const [acceptPolicy, setAcceptPolicy] = useState(false);
   //const [otp, setOtp] = useState('');
-  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']); // Định nghĩa kiểu là mảng chuỗi
+  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(10 * 60);// 10 minutes
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Register'>>();
+
+  // Đếm ngược thời gian
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000); // Mỗi giây giảm 1
+
+    return () => clearInterval(intervalRef.current!); // Dọn dẹp timer
+  }, []);
+
+  // Định dạng thời gian hiển thị
+  const formatTime = (time: number): string => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const handleRegister = async () => {
     if (!name || !email || !password || !phone) {
@@ -62,6 +87,8 @@ const RegisterScreen = () => {
   };
 
   const handleVerifyOtp = async () => {
+    const otpCode = otp.join('');// Ghép mảng OTP thành chuỗi
+
     if (!otp) {
       setError('Vui lòng nhập mã OTP.');
       return;
@@ -74,19 +101,21 @@ const RegisterScreen = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password, phone, otp }),
+        body: JSON.stringify({ name, email, password, phone, otp: otpCode }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.message || 'Xác thực OTP thất bại.');
+        Alert.alert('OTP không hợp lệ. Xác thực OTP thất bại.')
         return;
       }
 
       setError('');
+      setModalVisible(true); // Hiển thị modal khi xác thực thành công
       console.log('Registration successful');
-      Alert.alert('OTP Verified', 'Registration successful');
-      navigation.navigate('Login'); // Chuyển sang màn hình Login
+      setModalVisible(true);
+      //navigation.navigate('Login'); // Chuyển sang màn hình Login. Không điều hướng ngay lập tức
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
       console.error('OTP verification error:', error);
@@ -199,14 +228,38 @@ const RegisterScreen = () => {
               ))}
             </View>
 
-            <TouchableOpacity onPress={() => Alert.alert('Code Resent', 'The code has been sent again!')}>
-              <Text style={styles.resendText}>Chưa nhận được OTP? <Text style={styles.resendLink}>Gửi lại</Text></Text>
-            </TouchableOpacity>
+            <Text style={styles.timerText}>
+              Mã OTP sẽ hết hạn trong: {formatTime(timeLeft)}
+            </Text>
 
-            <TouchableOpacity style={styles.verifyButton} onPress={handleVerifyOtp}>
-              <Text style={styles.verifyButtonText}>Verify</Text>
-            </TouchableOpacity>
+            {timeLeft === 0 ? (
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert('Code Resent', 'Mã xác nhận đã được gửi lại!');
+                  setTimeLeft(10 * 60); // Đặt lại thời gian 10 phút
+                }}
+              >
+                <Text style={styles.resendText}>
+                  OTP đã hết hạn. <Text style={styles.resendLink}>Gửi lại</Text>
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={() => Alert.alert('Code Resent', 'Mã xác nhận đã được gửi lại!')}
+              >
+                <Text style={styles.resendText}>
+                  Chưa nhận được OTP? <Text style={styles.resendLink}>Gửi lại</Text>
+                </Text>
+              </TouchableOpacity>
+            )}
+            {/* <TouchableOpacity onPress={() => Alert.alert('Code Resent', 'The code has been sent again!')}>
+              <Text style={styles.resendText}>Chưa nhận được OTP? <Text style={styles.resendLink}>Gửi lại</Text></Text>
+            </TouchableOpacity> */}
           </View>
+
+          <TouchableOpacity style={styles.loginButton} onPress={handleVerifyOtp}>
+            <Text style={styles.verifyButtonText}>Xác thực</Text>
+          </TouchableOpacity>
 
         </>
       )}
@@ -216,8 +269,29 @@ const RegisterScreen = () => {
           Đăng nhập
         </Text>
       </Text>
-
+      {/* Modal thông báo */}
+      <Modal visible={modalVisible} transparent={true} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Image
+              source={require('../assets/images/checkmark.png')} // Đường dẫn ảnh
+              style={styles.successIcon}
+            />
+            <Text style={styles.successMessage}>Xác thực thành công. Chào mừng thành viên mới!</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => {
+                setModalVisible(false);
+                navigation.navigate('Login'); // Điều hướng sang Login ngay khi nhấn OK
+              }}
+            >
+              <Text style={styles.closeButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
+
   );
 }
 
@@ -244,6 +318,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#502419',
     marginBottom: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   containerOTP: {
     flex: 1,
@@ -289,12 +365,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 8,
-    marginTop: 16,
   },
   verifyButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  timerText: {
+    fontSize: 16,
+    color: '#FF0000',
+    marginBottom: 20,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -365,9 +445,46 @@ const styles = StyleSheet.create({
     color: 'red',
     marginBottom: 16,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: 300,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  successIcon: {
+    width: 80,
+    height: 80,
+    marginBottom: 20,
+  },
+  successMessage: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  closeButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    padding: 10,
+    paddingHorizontal: 20,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
 });
 
-//   return (
+
+//{
+// //   return (
 //     <View style={styles.container}>
 //       {step === 1 ? (
 //         <>
@@ -432,47 +549,7 @@ const styles = StyleSheet.create({
 //     </View>
 //   );
 // };
+//}
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 16,
-//     backgroundColor: '#f9f9f9',
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     marginBottom: 24,
-//   },
-//   input: {
-//     width: '100%',
-//     height: 50,
-//     borderWidth: 1,
-//     borderColor: '#ccc',
-//     borderRadius: 8,
-//     paddingHorizontal: 12,
-//     marginBottom: 16,
-//     backgroundColor: '#fff',
-//   },
-//   registerButton: {
-//     width: '100%',
-//     height: 50,
-//     backgroundColor: '#007bff',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderRadius: 8,
-//   },
-//   registerButtonText: {
-//     color: '#fff',
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-//   errorText: {
-//     color: 'red',
-//     marginBottom: 16,
-//   },
-// });
 
 export default RegisterScreen;

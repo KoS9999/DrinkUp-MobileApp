@@ -82,9 +82,6 @@ const HomeScreen = () => {
           <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
         </TouchableOpacity>
       )}
-      {/* <TouchableOpacity onPress={() => navigation.navigate('OTPScreen')} style={styles.authButton}>
-        <Text style={styles.authButtonText}>OTP</Text>
-      </TouchableOpacity> */}
 
       {/* Carousel */}
       <View style={styles.carousel}>
