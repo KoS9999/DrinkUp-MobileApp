@@ -23,8 +23,8 @@ const ForgotPasswordScreen = () => {
     }
 
     try {
-      //const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
-      const response = await fetch('http://192.168.1.133:5001/api/auth/forgot-password', {
+        const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
+      //const response = await fetch('http://192.168.1.133:5001/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,13 +58,13 @@ const ForgotPasswordScreen = () => {
     }
 
     try {
-      //const response = await fetch('http://192.168.2.6:5001/api/auth/reset-password', {
-        const response = await fetch('http://192.168.1.133:5001/api/auth/reset-password', {
+        const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
+        //const response = await fetch('http://192.168.1.133:5001/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, otp, newPassword }),
+        body: JSON.stringify({ email, otp, newPassword, confirmPassword }),
       });
 
       if (!response.ok) {
