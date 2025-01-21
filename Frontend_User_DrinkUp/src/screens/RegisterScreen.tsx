@@ -188,12 +188,12 @@ const RegisterScreen = () => {
 
               <Text style={styles.footerText}>
                 <Text style={styles.acceptPolicyText}>Tôi đồng ý với{' '}</Text>
-                <Text style={styles.signUpText} onPress={() => navigation.navigate('PolicyScreen')}>
+                <Text style={styles.signInText} onPress={() => navigation.navigate('PolicyScreen')}>
                   Điều khoản dịch vụ{' '}
                 </Text>
                 <Text style={styles.acceptPolicyText}> và </Text>
 
-                <Text style={styles.signUpText} onPress={() => navigation.navigate('PolicyScreen')}>
+                <Text style={styles.signInText} onPress={() => navigation.navigate('PolicyScreen')}>
                   Chính sách quyền riêng tư.
                 </Text>
               </Text>
@@ -265,7 +265,7 @@ const RegisterScreen = () => {
       )}
       <Text style={styles.footerText}>
         Bạn đã có tài khoản?{' '}
-        <Text style={styles.signUpText} onPress={() => navigation.navigate('Login')}>
+        <Text style={styles.signInText} onPress={() => navigation.navigate('Login')}>
           Đăng nhập
         </Text>
       </Text>
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     //marginBottom: 5,
-    marginTop: 10
+    marginTop: 0
   },
   title: {
     fontSize: 24,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     //marginTop: 10,
   },
-  signUpText: {
+  signInText: {
     color: '#985446',
     textDecorationLine: 'underline',
   },

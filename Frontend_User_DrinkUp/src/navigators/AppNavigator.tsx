@@ -29,8 +29,8 @@ export default function AppNavigator() {
         <Stack.Screen options={{ headerShown: false}} name="OnBoardingScreen" component={OnBoardingScreen} />
         <Stack.Screen options={{ headerShown: false}} name="HomeScreen" component={HomeScreen} />
         {/* Tạm thời để headerShown của Login là false */}
-        <Stack.Screen options={{ headerShown: true}} name="Login" component={LoginScreen} /> 
-        <Stack.Screen options={{ headerShown: true}} name="Register" component={RegisterScreen} />
+        <Stack.Screen options={{ headerShown: false}} name="Login" component={LoginScreen} /> 
+        <Stack.Screen options={{ headerShown: false}} name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="PolicyScreen" component={PolicyScreen} />
       </Stack.Navigator>
