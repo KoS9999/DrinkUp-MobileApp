@@ -97,6 +97,33 @@ const HomeScreen = () => {
         </View>
       </View>
 
+      {/* Giao hàng / Lấy tận nơi */}
+      <View style={styles.optionsContainer}>
+        <TouchableOpacity
+          style={styles.optionItem}
+          
+        >
+          {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
+          <Image
+            source={require('../assets/images/delivery.png')}
+            style={styles.optionImage}
+          />
+           <Text style={styles.optionText}>Giao hàng</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.optionItem}
+          
+        >
+          {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
+          <Image
+            source={require('../assets/images/pickup.png')}
+            style={styles.optionImage}
+          />
+           <Text style={styles.optionText}>Lấy tận nơi</Text>
+        </TouchableOpacity>
+
+      </View>
       {/* Footer Navigation */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.navItem}>
@@ -176,6 +203,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     alignItems: 'center',
     alignContent: 'center'
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+    marginHorizontal: 16,
+  },
+  optionItem: {
+    alignItems: 'center',
+  },
+  optionImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 8,
+    elevation: 10,
+  },
+  optionText: {
+    fontSize: 14,
+    color: '#0A1858',
   },
   carousel: {
     alignItems: 'center',
