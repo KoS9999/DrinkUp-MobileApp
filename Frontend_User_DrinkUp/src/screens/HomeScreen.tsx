@@ -218,11 +218,12 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 12,
     marginBottom: 8,
-    elevation: 10,
+    elevation: 8,
   },
   optionText: {
     fontSize: 14,
     color: '#0A1858',
+    fontWeight: 500
   },
   carousel: {
     alignItems: 'center',
