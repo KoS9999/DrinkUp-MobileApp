@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
@@ -17,7 +17,7 @@ const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [greeting, setGreeting] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
+  const swiperRef = useRef<Swiper>(null); // Tạo tham chiếu cho Swiper
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -53,38 +53,81 @@ const HomeScreen = () => {
     "Pacifico-Regular": require("../../assets/fonts/Pacifico-Regular.ttf"),
   });
 
+  const slides = [
+    {
+      id: 1,
+      image: require('../assets/images/slide-1.png'),
+    },
+    {
+      id: 2,
+      image: require('../assets/images/slide-2.png'),
+    },
+    {
+      id: 3,
+      image: require('../assets/images/slide-3.png'),
+    },
+    {
+      id: 4,
+      image: require('../assets/images/slide-4.png'),
+    },
+    {
+      id: 5,
+      image: require('../assets/images/slide-5.png')
+    },
+    {
+      id: 6,
+      image: require('../assets/images/slide-6.png')
+    }
+  ];
+
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={require('../assets/images/logo-drinkup-1.png')}
-            style={styles.profileImage}
-          />
-          <View>
-            <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.role}>{isLoggedIn ? 'Thành viên' : 'Khách'}</Text>
+      <ScrollView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require('../assets/images/logo-drinkup-1.png')}
+              style={styles.profileImage}
+            />
+            <View>
+              <Text style={styles.greeting}>{greeting}</Text>
+              <Text style={styles.role}>{isLoggedIn ? 'Thành viên' : 'Khách'}</Text>
+            </View>
           </View>
+          <MaterialIcons name="notifications-on" size={24} color="#6E3816" />
+          {/* <Ionicons name="notifications-on" size={24} color="#6E3816" /> */}
         </View>
-        <MaterialIcons name="notifications-on" size={24} color="#6E3816" />
-        {/* <Ionicons name="notifications-on" size={24} color="#6E3816" /> */}
-      </View>
 
-      {/* Đăng ký / Đăng nhập */}
-      {/* {!isLoggedIn && (
+        {/* Đăng ký / Đăng nhập */}
+        {/* {!isLoggedIn && (
         <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
           <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
         </TouchableOpacity>
       )} */}
-      {(
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
-          <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
-        </TouchableOpacity>
-      )}
+        {(
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
+            <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
+          </TouchableOpacity>
+        )}
 
-      {/* Carousel */}
-      <View style={styles.carousel}>
+        {/* Carousel */}
+        <Swiper
+          ref={swiperRef}
+          style={styles.wrapper}
+          loop={false}
+          activeDotColor="#A0522D"
+          dotStyle={styles.indicator}
+          activeDotStyle={styles.activeIndicator}
+        >
+          {slides.map((slide, index) => (
+            <View key={slide.id} style={styles.slide}>
+              <Image source={slide.image} style={styles.carouselImage} />
+            </View>
+          ))}
+        </Swiper>
+
+        {/* <View style={styles.carousel}>
         <Image
           source={require('../assets/images/slide-1.png')}
           style={styles.carouselImage}
@@ -95,35 +138,37 @@ const HomeScreen = () => {
           <View style={styles.indicator} />
           <View style={styles.indicator} />
         </View>
-      </View>
+      </View> */}
 
-      {/* Giao hàng / Lấy tận nơi */}
-      <View style={styles.optionsContainer}>
-        <TouchableOpacity
-          style={styles.optionItem}
-          
-        >
-          {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
-          <Image
-            source={require('../assets/images/delivery.png')}
-            style={styles.optionImage}
-          />
-           <Text style={styles.optionText}>Giao hàng</Text>
-        </TouchableOpacity>
+        {/* Giao hàng / Lấy tận nơi */}
+        <View style={styles.optionsContainer}>
+          <TouchableOpacity
+            style={styles.optionItem}
 
-        <TouchableOpacity
-          style={styles.optionItem}
-          
-        >
-          {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
-          <Image
-            source={require('../assets/images/pickup.png')}
-            style={styles.optionImage}
-          />
-           <Text style={styles.optionText}>Lấy tận nơi</Text>
-        </TouchableOpacity>
+          >
+            {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
+            <Image
+              source={require('../assets/images/delivery.png')}
+              style={styles.optionImage}
+            />
+            <Text style={styles.optionText}>Giao hàng</Text>
+          </TouchableOpacity>
 
-      </View>
+          <TouchableOpacity
+            style={styles.optionItem}
+
+          >
+            {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
+            <Image
+              source={require('../assets/images/pickup.png')}
+              style={styles.optionImage}
+            />
+            <Text style={styles.optionText}>Lấy tận nơi</Text>
+          </TouchableOpacity>
+
+        </View>
+
+      </ScrollView>
       {/* Footer Navigation */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.navItem}>
@@ -209,6 +254,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingVertical: 16,
     marginHorizontal: 16,
+    marginTop: -450
   },
   optionItem: {
     alignItems: 'center',
@@ -225,18 +271,25 @@ const styles = StyleSheet.create({
     color: '#0A1858',
     fontWeight: 500
   },
+  wrapper: {},
+  slide: {
+    //flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
   carousel: {
     alignItems: 'center',
     marginBottom: 16,
   },
   carouselImage: {
-    width: 400,
+    width: 350,
     height: 198.77,
     borderRadius: 12,
   },
   indicators: {
     flexDirection: 'row',
-    marginTop: 8,
+    marginTop: -900,
   },
   indicator: {
     width: 8,
@@ -244,17 +297,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#E5E5E5',
     marginHorizontal: 4,
+    marginTop: -900,
+    
   },
   activeIndicator: {
     backgroundColor: '#6E3816',
+    marginTop: -900,
   },
   footer: {
-    // flexDirection: 'row',
-    // justifyContent: 'space-around',
-    // backgroundColor: '#6E3816',
-    // paddingVertical: 16,
-    // borderTopLeftRadius: 24,
-    // borderTopRightRadius: 24,
     position: 'absolute',
     bottom: 0,
     left: 0,
