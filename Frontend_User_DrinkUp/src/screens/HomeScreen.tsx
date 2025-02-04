@@ -9,6 +9,7 @@ import { useFonts } from 'expo-font';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import ProductCarousel from '../components/ProductCarousel';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
 
@@ -76,13 +77,19 @@ const HomeScreen = () => {
     },
     {
       id: 6,
+      image: require('../assets/images/slide-7.png')
+    },
+    {
+      id: 7,
       image: require('../assets/images/slide-6.png')
     }
   ];
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container}
+                  contentContainerStyle={{ paddingBottom: 120 }}
+                  showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -167,6 +174,9 @@ const HomeScreen = () => {
           </TouchableOpacity>
 
         </View>
+
+        {/* Product Carousel */}
+        <ProductCarousel />
 
       </ScrollView>
       {/* Footer Navigation */}
@@ -298,7 +308,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E5E5',
     marginHorizontal: 4,
     marginTop: -900,
-    
+
   },
   activeIndicator: {
     backgroundColor: '#6E3816',
