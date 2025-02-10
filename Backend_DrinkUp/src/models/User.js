@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
   phone: { type: String },
   address: { type: String },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  profileImage: { type: String },
   createdAt: { type: Date, default: Date.now },
   enable: { type: Boolean, default: true },
 });
