@@ -10,6 +10,8 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ProductCarousel from '../components/ProductCarousel';
+import FooterNavigation from '../components/FooterNavigation';
+
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
 
@@ -180,28 +182,7 @@ const HomeScreen = () => {
 
       </ScrollView>
       {/* Footer Navigation */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={24} color="white" />
-          <Text style={styles.navText}>Trang chủ</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <MaterialIcons name="local-cafe" size={24} color="#D7B6A5" />
-          <Text style={styles.navTextInactive}>Đặt nước</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="cart-outline" size={24} color="#D7B6A5" />
-          <Text style={styles.navTextInactive}>Giỏ hàng</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="storefront-outline" size={24} color="#D7B6A5" />
-          <Text style={styles.navTextInactive}>Cửa hàng</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={24} color="#D7B6A5" />
-          <Text style={styles.navTextInactive}>Tài khoản</Text>
-        </TouchableOpacity>
-      </View>
+      
     </View>
   );
 };
