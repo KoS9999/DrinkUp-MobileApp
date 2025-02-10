@@ -5,6 +5,7 @@ const userController = require('../controllers/userController');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' });
 
+router.get('/profile', authenticate, userController.getUserProfile);
 router.put('/update-email', authenticate, userController.updateEmail);
 router.put('/update-phone', authenticate, userController.updatePhone);
 router.put('/update-profile', authenticate, userController.updateProfile);

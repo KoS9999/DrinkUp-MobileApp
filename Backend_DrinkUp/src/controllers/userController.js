@@ -11,6 +11,19 @@ const generateOTP = async (email) => {
   await OTPService.sendOTP(email, code);
   return code;
 };
+exports.getUserProfile = async (req, res) => {
+    const userId = req.user.id;
+  
+    try {
+      const user = await User.findById(userId).select('-password');
+      if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+  
+      res.status(200).json({ message: 'Thông tin người dùng', user });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+  };
+  
 
 exports.updateEmail = async (req, res) => {
   const { newEmail, otpFromCurrentEmail, otpFromNewEmail } = req.body;
