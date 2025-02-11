@@ -36,9 +36,9 @@ const HomeScreen = () => {
   useEffect(() => {
     const checkLoginStatus = async () => {
       const loggedIn = await AsyncStorage.getItem('isLoggedIn');
-      setIsLoggedIn(loggedIn === 'true');
+      const token = await AsyncStorage.getItem('userToken');
+      setIsLoggedIn(loggedIn === 'true' && token !== null);
     };
-
     checkLoginStatus();
   }, []);
 
@@ -55,6 +55,12 @@ const HomeScreen = () => {
     "Oswald-Medium": require("../../assets/fonts/Oswald-Medium.ttf"),
     "Pacifico-Regular": require("../../assets/fonts/Pacifico-Regular.ttf"),
   });
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('isLoggedIn');
+    await AsyncStorage.removeItem('userToken');
+    setIsLoggedIn(false);
+  }
 
   const slides = [
     {
@@ -109,16 +115,16 @@ const HomeScreen = () => {
         </View>
 
         {/* Đăng ký / Đăng nhập */}
-        {/* {!isLoggedIn && (
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
-          <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
-        </TouchableOpacity>
-      )} */}
-        {(
+        {isLoggedIn ? (
+          <TouchableOpacity onPress={handleLogout} style={styles.authButton}>
+            <Text style={styles.authButtonText}>ĐĂNG XUẤT</Text>
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
             <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
-          </TouchableOpacity>
-        )}
+          </TouchableOpacity>   
+      )}
+        
 
         {/* Carousel */}
         <Swiper

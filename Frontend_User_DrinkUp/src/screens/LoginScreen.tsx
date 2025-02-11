@@ -24,7 +24,7 @@ const LoginScreen = () => {
   
     try {
       // response = await fetch('http://192.168.2.6:5001/api/auth/login', {
-      const response = await fetch('http://192.168.1.133:5001/api/auth/login',{
+      const response = await fetch('http://192.168.1.15:5000/api/auth/login',{
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,6 +42,7 @@ const LoginScreen = () => {
       console.log('Login successful:', data);
       setError('');
       await AsyncStorage.setItem('isLoggedIn', 'true');
+      await AsyncStorage.setItem('userToken', data.token);
       navigation.navigate('HomeScreen');
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');

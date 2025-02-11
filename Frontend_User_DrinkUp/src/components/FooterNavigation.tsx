@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ScreenName = 'HomeTab' | 'OrderTab' | 'CartTab' | 'StoreTab' | 'AccountTab';
 
@@ -22,6 +23,25 @@ const tabs: TabItem[] = [
 ];
 
 const FooterNavigation: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() =>{
+    const checkLoginStatus = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      setIsLoggedIn(!!token); //Nếu có token thì set true, ngược lại là false
+    };
+    checkLoginStatus();
+  }, []);
+
+  const handleAccountPress = async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    if(token){
+      navigation.navigate('AccountTab' as never);
+    } else {
+      navigation.navigate('Login' as never);
+    }
+  };
+
   return (
     <View style={styles.footer}>
       {tabs.map(({ route, label, icon, IconComponent }, index) => {
@@ -30,7 +50,8 @@ const FooterNavigation: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           <TouchableOpacity
             key={route}
             style={styles.navItem}
-            onPress={() => navigation.navigate(route as never)}
+            onPress={route === 'AccountTab' ? handleAccountPress : () => navigation.navigate(route as never)}
+            //onPress={() => navigation.navigate(route as never)}
           >
             <IconComponent name={icon as any} size={24} color={isActive ? 'white' : '#D7B6A5'} />
             <Text style={[styles.navText, !isActive && styles.navTextInactive]}>

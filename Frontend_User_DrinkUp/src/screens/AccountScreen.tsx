@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native'
 import React from 'react'
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Barcode } from 'expo-barcode-generator';
 
 type TabItem = {
   label: string;
@@ -17,9 +18,14 @@ const AccountScreen = () => {
           style={styles.memberCard}
           resizeMode="cover"
         >
-          <Text style={styles.memberTitle}>KHÁCH HÀNG THÂN THIẾT</Text>
+          <Text style={styles.memberTitle}>THẺ THÀNH VIÊN</Text>
           <Text style={styles.katBalance}>8 POINTS</Text>
           <Text style={styles.memberName}>NGUYỄN HOÀNG PHƯƠNG NGÂN</Text>
+
+          <Barcode     
+            value="1234567890987"
+            options={{ format: 'CODE128', background: 'white', height: 70, width: 2}}
+          />
         </ImageBackground>
 
         <View style={styles.accountSection}>
@@ -61,28 +67,30 @@ const styles = StyleSheet.create({
     backgroundColor: "#E6E8F2",
     borderRadius: 10,
     padding: 16,
-    alignItems: "center",
     marginBottom: 20,
     overflow: 'hidden',
+    alignItems: "flex-start",
+
   },
   memberTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
-    textAlign:'justify'
+    textAlign: 'justify',
   },
   katBalance: {
     fontSize: 16,
     color: "#555",
     marginVertical: 4,
-    textAlign:'left'
+    textAlign: 'justify',
   },
   memberName: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#222",
     marginTop: 10,
-    textAlign:'justify'
+    textAlign: 'justify',
+    marginBottom: 20
   },
   accountSection: {
     backgroundColor: "#fff",
@@ -108,6 +116,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     marginBottom: 10,
+    borderWidth: 1, // Thêm viền
+    borderColor: "#0C2340", // Màu viền
+    borderStyle: "dashed", // Kiểu viền gạch đứt
   },
   itemText: {
     fontSize: 14,
