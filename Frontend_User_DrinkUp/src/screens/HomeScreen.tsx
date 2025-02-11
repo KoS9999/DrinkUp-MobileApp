@@ -12,15 +12,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductCarousel from '../components/ProductCarousel';
 import FooterNavigation from '../components/FooterNavigation';
 
-
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
-
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [greeting, setGreeting] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const swiperRef = useRef<Swiper>(null); // Tạo tham chiếu cho Swiper
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      const storedUserName = await AsyncStorage.getItem('userName');
+      if(storedUserName){
+        setUserName(storedUserName);
+      }
+    };
+    fetchUserName();
+  }, [])
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -107,7 +116,7 @@ const HomeScreen = () => {
             />
             <View>
               <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.role}>{isLoggedIn ? 'Thành viên' : 'Khách'}</Text>
+              <Text style={styles.role}>{isLoggedIn ? userName : 'Khách'}</Text>
             </View>
           </View>
           <MaterialIcons name="notifications-on" size={24} color="#6E3816" />

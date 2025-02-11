@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -15,7 +15,7 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const [rememberMe, setRememberMe] = useState(false);
-
+  
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Email và mật khẩu không được để trống.');
@@ -24,17 +24,23 @@ const LoginScreen = () => {
   
     try {
       // response = await fetch('http://192.168.2.6:5001/api/auth/login', {
-      const response = await fetch('http://192.168.1.15:5000/api/auth/login',{
+      const response = await fetch('http://192.168.1.131:5000/api/auth/login',{
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
       });
-  
+
       if (!response.ok) {
         const errorData = await response.json();
-        setError(errorData.message || 'Đăng nhập thất bại.');
+        if (errorData.message === 'Không tìm thấy người dùng') {
+          setError('Không tìm thấy người dùng.');
+        } else if (errorData.message === 'Thông tin đăng nhập không hợp lệ') {
+          setError('Sai mật khẩu.');
+        } else {
+          setError(errorData.message || 'Đăng nhập thất bại.');
+        }
         return;
       }
   
@@ -43,6 +49,8 @@ const LoginScreen = () => {
       setError('');
       await AsyncStorage.setItem('isLoggedIn', 'true');
       await AsyncStorage.setItem('userToken', data.token);
+      await AsyncStorage.setItem('userName', data.user.name);
+
       navigation.navigate('HomeScreen');
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
@@ -50,7 +58,6 @@ const LoginScreen = () => {
     }
   };
   
-
   return (
     <View style={styles.container}>
       <Image source={require('../assets/images/logo-drinkup.png')} style={styles.logo}></Image>

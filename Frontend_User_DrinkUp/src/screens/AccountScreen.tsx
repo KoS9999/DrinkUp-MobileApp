@@ -1,7 +1,9 @@
 import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native'
-import React from 'react'
+import React, {useState, useEffect} from 'react'
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Barcode } from 'expo-barcode-generator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 type TabItem = {
   label: string;
@@ -10,6 +12,28 @@ type TabItem = {
 };
 
 const AccountScreen = () => {
+  const [userName, setUserName] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      const storedUserName = await AsyncStorage.getItem('userName');
+      if(storedUserName){
+        setUserName(storedUserName);
+      }
+    };
+    fetchUserName();
+  }, [])
+
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
+      const token = await AsyncStorage.getItem('userToken');
+      setIsLoggedIn(loggedIn === 'true' && token !== null);
+    };
+    checkLoginStatus();
+  }, []);
+
   return (
     <View style={styles.container}>
       <ScrollView>
@@ -20,8 +44,7 @@ const AccountScreen = () => {
         >
           <Text style={styles.memberTitle}>THẺ THÀNH VIÊN</Text>
           <Text style={styles.katBalance}>8 POINTS</Text>
-          <Text style={styles.memberName}>NGUYỄN HOÀNG PHƯƠNG NGÂN</Text>
-
+          <Text style={styles.memberName}>{userName}</Text>
           <Barcode     
             value="1234567890987"
             options={{ format: 'CODE128', background: 'white', height: 70, width: 2}}
