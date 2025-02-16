@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Image, TouchableOpacity, Alert, Modal } from "react-native";
+import { View, Text, TextInput, Image, TouchableOpacity, Alert, Modal, StyleSheet } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useNavigation } from "@react-navigation/native";
@@ -7,7 +7,8 @@ import UpdateEmailScreen from "./UpdateEmailScreen";
 import UpdatePhoneScreen from "./UpdatePhoneScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_BASE_URL = "http://192.168.2.9:5001/api/user";
+// const API_BASE_URL = "http://192.168.2.9:5001/api/user";
+const API_BASE_URL = "http://192.168.1.131:5000/api/user";
 
 // Hàm lấy token từ AsyncStorage
 const getAuthToken = async () => {
@@ -82,10 +83,25 @@ const UpdateProfile = () => {
   return (
     <View style={{ flex: 1, padding: 20 }}>
       {/* Ảnh đại diện */}
-      <Image source={{ uri: user?.profileImage || "https://via.placeholder.com/100" }} style={{ width: 100, height: 100, borderRadius: 50, alignSelf: "center" }} />
+      <Image 
+        source={ user?.profileImage ? { uri: user.profileImage } : require('../assets/images/logo-drinkup.png') } 
+        style={{ width: 100, height: 100, borderRadius: 50, alignSelf: "center", borderWidth: 2, borderColor: "#d3d3d3" }} 
+      />
+
+      {[
+        { key: "name", label: "Tên", icon: "person-outline", editable: true },
+        { key: "email", label: "Email", icon: "email", editable: false, screen: "UpdateEmailScreen" },
+        { key: "phone", label: "Số điện thoại", icon: "phone", editable: false, screen: "UpdatePhoneScreen" },
+        { key: "address", label: "Địa chỉ", icon: "location-on",  editable: true },
+      ].map(({ key, label, icon, screen, editable }) =>{
+        <View key={key} style={styles.itemRow}>
+          
+        </View>
+      })
+      }
 
       {/* Thông tin người dùng */}
-      {[
+      {/* {[
         { key: "name", label: "Tên", editable: true },
         { key: "email", label: "Email", editable: false, screen: "UpdateEmailScreen" },
         { key: "phone", label: "Số điện thoại", editable: false, screen: "UpdatePhoneScreen" },
@@ -100,7 +116,7 @@ const UpdateProfile = () => {
             <MaterialIcons name="edit" size={24} color="blue" />
           </TouchableOpacity>
         </View>
-      ))}
+      ))} */}
 
       {/* Modal chỉnh sửa Name & Address */}
       <Modal visible={modalVisible} transparent animationType="slide">
@@ -126,11 +142,41 @@ const Stack = createStackNavigator();
 const UpdateProfileScreen = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ title: "Cập nhật hồ sơ" }} />
-      <Stack.Screen name="UpdateEmailScreen" component={UpdateEmailScreen} options={{ title: "Cập nhật Email" }} />
-      <Stack.Screen name="UpdatePhoneScreen" component={UpdatePhoneScreen} options={{ title: "Cập nhật Số điện thoại" }} />
+      <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ headerShown: false }} />
+      <Stack.Screen name="UpdateEmailScreen" component={UpdateEmailScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="UpdatePhoneScreen" component={UpdatePhoneScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };
 
 export default UpdateProfileScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    // Tùy chỉnh nếu cần
+    marginTop: 10,
+  },
+  itemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  itemIcon: {
+    marginRight: 15,
+  },
+  itemLabel: {
+    fontSize: 14,
+    color: "#9CA3AF",
+  },
+  itemValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#111827",
+    marginTop: 2,
+  },
+  editButton: {
+    padding: 5,
+  },
+});
