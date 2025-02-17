@@ -1,16 +1,15 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import Swiper from 'react-native-swiper';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigators/AppNavigator';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MaterialIcons } from '@expo/vector-icons';
 
 import ProductCarousel from '../components/ProductCarousel';
 import FooterNavigation from '../components/FooterNavigation';
+import { RootStackParamList } from '../navigators/AppNavigator';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
 
@@ -18,18 +17,19 @@ const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [greeting, setGreeting] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const swiperRef = useRef<Swiper>(null); // Tạo tham chiếu cho Swiper
+  const swiperRef = useRef<Swiper>(null);
   const [userName, setUserName] = useState('');
+  const [topSellingProducts, setTopSellingProducts] = useState([]);
 
   useEffect(() => {
     const fetchUserName = async () => {
       const storedUserName = await AsyncStorage.getItem('userName');
-      if(storedUserName){
+      if (storedUserName) {
         setUserName(storedUserName);
       }
     };
     fetchUserName();
-  }, [])
+  }, []);
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -43,13 +43,59 @@ const HomeScreen = () => {
   }, []);
 
   useEffect(() => {
-    const checkLoginStatus = async () => {
-      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
-      const token = await AsyncStorage.getItem('userToken');
-      setIsLoggedIn(loggedIn === 'true' && token !== null);
+    const fetchTopSellingProducts = async () => {
+      try {
+        const response = await fetch('http://192.168.2.9:5000/api/home/products/top-selling', {
+          method: 'GET',
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+
+        const jsonResponse = await response.json();
+        console.log("Fetched top selling products:", JSON.stringify(jsonResponse, null, 2));
+
+        if (jsonResponse.success && jsonResponse.data) {
+          // Định nghĩa kiểu dữ liệu cho item
+          const formattedProducts = jsonResponse.data.map((item: {
+            _id: string;
+            productDetails: {
+              name: string;
+              imageUrl: string;
+              price: Record<string, number>;
+            };
+          }) => {
+            const details = item.productDetails || {}; 
+            const prices = details.price || {}; 
+
+            return {
+              id: item._id,  
+              name: details.name || "Không có tên",
+              imageUrl: details.imageUrl || "https://example.com/default.jpg", 
+              size: Object.keys(prices).length > 0 ? Object.keys(prices) : ['S', 'M', 'L'], 
+              price: prices, 
+            };
+          });
+
+          setTopSellingProducts(formattedProducts);
+        }
+      } catch (error) {
+        console.error("Error fetching top selling products:", error);
+      }
     };
-    checkLoginStatus();
-  }, []);
+
+    fetchTopSellingProducts();
+}, []);
+
+  
+  
+  
+  
+  
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -69,58 +115,31 @@ const HomeScreen = () => {
     await AsyncStorage.removeItem('isLoggedIn');
     await AsyncStorage.removeItem('userToken');
     setIsLoggedIn(false);
-  }
+  };
 
   const slides = [
-    {
-      id: 1,
-      image: require('../assets/images/slide-1.png'),
-    },
-    {
-      id: 2,
-      image: require('../assets/images/slide-2.png'),
-    },
-    {
-      id: 3,
-      image: require('../assets/images/slide-3.png'),
-    },
-    {
-      id: 4,
-      image: require('../assets/images/slide-4.png'),
-    },
-    {
-      id: 5,
-      image: require('../assets/images/slide-5.png')
-    },
-    {
-      id: 6,
-      image: require('../assets/images/slide-7.png')
-    },
-    {
-      id: 7,
-      image: require('../assets/images/slide-6.png')
-    }
+    { id: 1, image: require('../assets/images/slide-1.png') },
+    { id: 2, image: require('../assets/images/slide-2.png') },
+    { id: 3, image: require('../assets/images/slide-3.png') },
+    { id: 4, image: require('../assets/images/slide-4.png') },
+    { id: 5, image: require('../assets/images/slide-5.png') },
+    { id: 6, image: require('../assets/images/slide-7.png') },
+    { id: 7, image: require('../assets/images/slide-6.png') }
   ];
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.container}
-                  contentContainerStyle={{ paddingBottom: 120 }}
-                  showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Image
-              source={require('../assets/images/logo-drinkup-1.png')}
-              style={styles.profileImage}
-            />
+            <Image source={require('../assets/images/logo-drinkup-1.png')} style={styles.profileImage} />
             <View>
               <Text style={styles.greeting}>{greeting}</Text>
               <Text style={styles.role}>{isLoggedIn ? userName : 'Khách'}</Text>
             </View>
           </View>
           <MaterialIcons name="notifications-on" size={24} color="#6E3816" />
-          {/* <Ionicons name="notifications-on" size={24} color="#6E3816" /> */}
         </View>
 
         {/* Đăng ký / Đăng nhập */}
@@ -131,78 +150,33 @@ const HomeScreen = () => {
         ) : (
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
             <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
-          </TouchableOpacity>   
-      )}
-        
+          </TouchableOpacity>
+        )}
 
         {/* Carousel */}
-        <Swiper
-          ref={swiperRef}
-          style={styles.wrapper}
-          loop={false}
-          activeDotColor="#A0522D"
-          dotStyle={styles.indicator}
-          activeDotStyle={styles.activeIndicator}
-        >
-          {slides.map((slide, index) => (
+        <Swiper ref={swiperRef} style={styles.wrapper} loop={false} activeDotColor="#A0522D" dotStyle={styles.indicator} activeDotStyle={styles.activeIndicator}>
+          {slides.map((slide) => (
             <View key={slide.id} style={styles.slide}>
               <Image source={slide.image} style={styles.carouselImage} />
             </View>
           ))}
         </Swiper>
 
-        {/* <View style={styles.carousel}>
-        <Image
-          source={require('../assets/images/slide-1.png')}
-          style={styles.carouselImage}
-        />
-        <View style={styles.indicators}>
-          <View style={[styles.indicator, styles.activeIndicator]} />
-          <View style={styles.indicator} />
-          <View style={styles.indicator} />
-          <View style={styles.indicator} />
+        {/* Hiển thị sản phẩm bán chạy với ProductCarousel */}
+        <View style={styles.productSection}>
+          <Text style={styles.sectionTitle}>Sản phẩm bán chạy</Text>
+          <ProductCarousel products={topSellingProducts} />
         </View>
-      </View> */}
-
-        {/* Giao hàng / Lấy tận nơi */}
-        <View style={styles.optionsContainer}>
-          <TouchableOpacity
-            style={styles.optionItem}
-
-          >
-            {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
-            <Image
-              source={require('../assets/images/delivery.png')}
-              style={styles.optionImage}
-            />
-            <Text style={styles.optionText}>Giao hàng</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.optionItem}
-
-          >
-            {/* onPress={() => navigation.navigate('DeliveryScreen')} */}
-            <Image
-              source={require('../assets/images/pickup.png')}
-              style={styles.optionImage}
-            />
-            <Text style={styles.optionText}>Lấy tận nơi</Text>
-          </TouchableOpacity>
-
-        </View>
-
-        {/* Product Carousel */}
-        <ProductCarousel />
-
       </ScrollView>
       {/* Footer Navigation */}
-      
     </View>
   );
 };
 
+
 const styles = StyleSheet.create({
+  productSection: { marginTop: 20, paddingHorizontal: 15 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   container: {
     flex: 1,
     backgroundColor: 'white',
