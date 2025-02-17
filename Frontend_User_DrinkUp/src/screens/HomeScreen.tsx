@@ -1,9 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import Swiper from 'react-native-swiper';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
 import { useNavigation } from '@react-navigation/native';
@@ -20,6 +19,7 @@ const HomeScreen = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const swiperRef = useRef<Swiper>(null); // Tạo tham chiếu cho Swiper
   const [userName, setUserName] = useState('');
+  const [topSellingProducts, setTopSellingProducts] = useState([]);
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -50,6 +50,56 @@ const HomeScreen = () => {
     };
     checkLoginStatus();
   }, []);
+
+  useEffect(() => {
+    const fetchTopSellingProducts = async () => {
+      try {
+        //const response = await fetch('http://192.168.2.9:5000/api/home/products/top-selling', {
+        const response = await fetch('http://192.168.1.131:5000/api/home/products/top-selling', {
+          method: 'GET',
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+
+        const jsonResponse = await response.json();
+        console.log("Fetched top selling products:", JSON.stringify(jsonResponse, null, 2));
+
+        if (jsonResponse.success && jsonResponse.data) {
+          // Định nghĩa kiểu dữ liệu cho item
+          const formattedProducts = jsonResponse.data.map((item: {
+            _id: string;
+            productDetails: {
+              name: string;
+              imageUrl: string;
+              price: Record<string, number>;
+            };
+          }) => {
+            const details = item.productDetails || {}; 
+            const prices = details.price || {}; 
+
+            return {
+              id: item._id,  
+              name: details.name || "Không có tên",
+              imageUrl: details.imageUrl || "https://example.com/default.jpg", 
+              size: Object.keys(prices).length > 0 ? Object.keys(prices) : ['S', 'M', 'L'], 
+              price: prices, 
+            };
+          });
+
+          setTopSellingProducts(formattedProducts);
+        }
+      } catch (error) {
+        console.error("Error fetching top selling products:", error);
+      }
+    };
+
+    fetchTopSellingProducts();
+}, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -120,7 +170,6 @@ const HomeScreen = () => {
             </View>
           </View>
           <MaterialIcons name="notifications-on" size={24} color="#6E3816" />
-          {/* <Ionicons name="notifications-on" size={24} color="#6E3816" /> */}
         </View>
 
         {/* Đăng ký / Đăng nhập */}
@@ -151,19 +200,6 @@ const HomeScreen = () => {
           ))}
         </Swiper>
 
-        {/* <View style={styles.carousel}>
-        <Image
-          source={require('../assets/images/slide-1.png')}
-          style={styles.carouselImage}
-        />
-        <View style={styles.indicators}>
-          <View style={[styles.indicator, styles.activeIndicator]} />
-          <View style={styles.indicator} />
-          <View style={styles.indicator} />
-          <View style={styles.indicator} />
-        </View>
-      </View> */}
-
         {/* Giao hàng / Lấy tận nơi */}
         <View style={styles.optionsContainer}>
           <TouchableOpacity
@@ -191,12 +227,18 @@ const HomeScreen = () => {
           </TouchableOpacity>
 
         </View>
-
-        {/* Categories List */}
+        
+        {/* Categories Horizontal List */}
         <CategoriesComponent/>
 
+        {/* Hiển thị sản phẩm bán chạy với ProductCarousel */}
+        <View style={styles.productSection}>
+          <Text style={styles.sectionTitle}>Sản phẩm bán chạy</Text>
+          <ProductCarousel products={topSellingProducts} />
+        </View>
+
         {/* Product Carousel */}
-        <ProductCarousel />
+        {/* <ProductCarousel /> */}
 
       </ScrollView>
       {/* Footer Navigation */}
@@ -338,6 +380,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  productSection: { 
+    marginTop: 20, 
+    paddingHorizontal: 15 
+  },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginBottom: 10
+  },
+  
 });
 
 

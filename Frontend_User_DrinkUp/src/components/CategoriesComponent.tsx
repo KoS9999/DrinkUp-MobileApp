@@ -1,7 +1,7 @@
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
 
-const API_BASE_URL = "http://192.168.8.69:5000/api/categories";
+const API_BASE_URL = "http://192.168.1.131:5000/api/home/categories";
 
 interface Category {
     id: string;
@@ -44,15 +44,18 @@ const CategoriesComponent = () => {
         fetchCategories();
     }, []);
 
-    const fetchCategories = async () =>{
-        try{
-            const response = await fetch(API_BASE_URL);
-            const data = await response.json();
-            setCategories(data);
-        } catch(error){
-            console.error("Lỗi fetch categories: ", error);
+    const fetchCategories = async () => {
+        try {
+          const response = await fetch(API_BASE_URL);
+          const text = await response.text();
+          // console.log("Raw API Response: ", text);
+          
+          const json = JSON.parse(text);
+          setCategories(json.data);
+        } catch (error) {
+          console.error("Lỗi fetch categories: ", error);
         }
-    };
+      };
 
     return (
         <View style={styles.container}>

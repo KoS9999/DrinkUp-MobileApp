@@ -5,11 +5,17 @@ const OrderDetail = require('../models/OrderDetail');
 exports.getAllCategories = async (req, res) => {
     try {
         const categories = await Category.find();
-        res.status(200).json({ success: true, data: categories });
+        const result = categories.map(cate => ({
+            id: cate._id.toString(),
+            name: cate.name,
+            imageUrl: cate.imageUrl,
+        }));
+        res.status(200).json({ success: true, data: result });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi server', error: error.message });
     }
 };
+
 
 exports.getTopSellingProducts = async (req, res) => {
     try {
