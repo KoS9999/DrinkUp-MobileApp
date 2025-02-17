@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ProductCarousel from '../components/ProductCarousel';
-import FooterNavigation from '../components/FooterNavigation';
+import CategoriesComponent from '../components/CategoriesComponent';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
 
@@ -191,6 +191,9 @@ const HomeScreen = () => {
           </TouchableOpacity>
 
         </View>
+
+        {/* Categories List */}
+        <CategoriesComponent/>
 
         {/* Product Carousel */}
         <ProductCarousel />

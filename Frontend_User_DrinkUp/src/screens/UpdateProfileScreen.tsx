@@ -87,6 +87,8 @@ const UpdateProfile = () => {
       resizeMode="cover"
       blurRadius={3}
     >
+    <View style={styles.overlay} />
+
       <View style={{ flex: 1, padding: 20 }}>
         {/* Ảnh đại diện */}
         <Image 
@@ -97,7 +99,7 @@ const UpdateProfile = () => {
         <TouchableOpacity onPress={() => {
           //Handle click event 
         }}>
-        <Text style={{ marginTop: 10, color: "#3498db", fontWeight: "bold", alignSelf: "center" }}>
+        <Text style={{ marginTop: 10, color: "white", fontWeight: "bold", alignSelf: "center" }}>
             Đổi ảnh đại diện
         </Text>
 
@@ -179,7 +181,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
-  
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject, // Phủ toàn bộ ImageBackground
+    backgroundColor: 'rgba(106, 160, 186, 0.5)', // Màu xanh dương đậm với độ trong suốt 50%
+  },
+
   itemRow: {
     flexDirection: "row",
     alignItems: "center",
