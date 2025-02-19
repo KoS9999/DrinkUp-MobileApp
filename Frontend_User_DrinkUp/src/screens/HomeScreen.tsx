@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ProductCarousel from '../components/ProductCarousel';
 import CategoriesComponent from '../components/CategoriesComponent';
+import CategoryProductList from '../components/CategoryProductList';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
 
@@ -55,7 +56,7 @@ const HomeScreen = () => {
     const fetchTopSellingProducts = async () => {
       try {
         //const response = await fetch('http://192.168.2.9:5000/api/home/products/top-selling', {
-        const response = await fetch('http://192.168.1.131:5000/api/home/products/top-selling', {
+        const response = await fetch('http://172.0.1.81:5000/api/home/products/top-selling', {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",
@@ -237,6 +238,12 @@ const HomeScreen = () => {
           <ProductCarousel products={topSellingProducts} />
         </View>
 
+        {/* Hiển thị sản phẩm theo danh mục và sắp xếp GIÁ tăng dần */}
+        <View style={styles.productSection}>
+          <Text style={styles.sectionTitle}>Món ngon phải thử</Text>
+          <CategoryProductList/>
+        </View>
+
         {/* Product Carousel */}
         {/* <ProductCarousel /> */}
 
@@ -387,7 +394,7 @@ const styles = StyleSheet.create({
   sectionTitle: { 
     fontSize: 18, 
     fontWeight: 'bold', 
-    marginBottom: 10
+    marginTop: 10
   },
   
 });

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -24,8 +24,10 @@ const tabs: TabItem[] = [
 
 const FooterNavigation: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const animatedHeight = useState(new Animated.Value(80))[0];
 
-  useEffect(() =>{
+  useEffect(() => {
     const checkLoginStatus = async () => {
       const token = await AsyncStorage.getItem('userToken');
       setIsLoggedIn(!!token); //Nếu có token thì set true, ngược lại là false
@@ -35,32 +37,48 @@ const FooterNavigation: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
   const handleAccountPress = async () => {
     const token = await AsyncStorage.getItem('userToken');
-    if(token){
+    if (token) {
       navigation.navigate('AccountTab' as never);
     } else {
       navigation.navigate('Login' as never);
     }
   };
 
+  const toggleFooter = () => {
+    Animated.timing(animatedHeight, {
+      toValue: isExpanded ? 20 : 80,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    setIsExpanded(!isExpanded);
+  };
+
   return (
-    <View style={styles.footer}>
-      {tabs.map(({ route, label, icon, IconComponent }, index) => {
-        const isActive = state.index === index;
-        return (
-          <TouchableOpacity
-            key={route}
-            style={styles.navItem}
-            onPress={route === 'AccountTab' ? handleAccountPress : () => navigation.navigate(route as never)}
+    <Animated.View style={[styles.footer, { height: animatedHeight }]}>
+      <TouchableOpacity style={styles.toogleButton} onPress={toggleFooter}>
+        <Ionicons name={isExpanded ? 'chevron-down' : 'chevron-up'} size={24} color="white" />
+      </TouchableOpacity>
+
+      {/* Navigation tabs */}
+      {isExpanded && 
+        tabs.map(({ route, label, icon, IconComponent }, index) => {
+          const isActive = state.index === index;
+          return (
+            <TouchableOpacity
+              key={route}
+              style={styles.navItem}
+              onPress={route === 'AccountTab' ? handleAccountPress : () => navigation.navigate(route as never)}
             //onPress={() => navigation.navigate(route as never)}
-          >
-            <IconComponent name={icon as any} size={24} color={isActive ? 'white' : '#D7B6A5'} />
-            <Text style={[styles.navText, !isActive && styles.navTextInactive]}>
-              {label}
-            </Text>
-          </TouchableOpacity>
-        );
+            >
+              <IconComponent name={icon as any} size={24} color={isActive ? 'white' : '#D7B6A5'} />
+              <Text style={[styles.navText, !isActive && styles.navTextInactive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
       })}
-    </View>
+    </Animated.View>
+
   );
 };
 
@@ -92,4 +110,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
+  toogleButton: {
+    position: 'absolute',
+    top: -15,
+    left: '50%',
+    transform: [{ translateX: -12 }],
+    backgroundColor: '#6E3816',
+    padding: 6,
+    borderRadius: 20,
+    zIndex: 10
+  }
 });
