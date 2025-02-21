@@ -56,7 +56,7 @@ const HomeScreen = () => {
     const fetchTopSellingProducts = async () => {
       try {
         //const response = await fetch('http://192.168.2.9:5000/api/home/products/top-selling', {
-        const response = await fetch('http://172.0.1.81:5000/api/home/products/top-selling', {
+        const response = await fetch('http://172.0.0.133:5000/api/home/products/top-selling', {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",

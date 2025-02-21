@@ -1,95 +1,155 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { MaterialIcons, AntDesign } from '@expo/vector-icons';
-
 
 type Product = {
     id: string;
     name: string;
     size?: string;
     description: string;
-    price: number;
+    price: {
+        S: number;
+        M: number;
+        L: number;
+    };
     imageUrl?: string;
 }
 
+// type CategoryData = {
+//     categoryName: string;
+//     products: Product[];
+// }
+
+
 type CategoryData = {
+    categoryId: string;
     categoryName: string;
     products: Product[];
+    currentPage: number;
+    totalPages: number;
 }
 
-interface CategoryProductListProps {
-    // có thể truyền vào từ ngoài (từ HomeScreen)
-    // hoặc có thể mock cứng data.
-    categoriesData?: CategoryData[];
-}
+const API_URL = "http://172.0.0.133:5000/api/home/products/by-category";
 
+const CategoryProductList: React.FC = () => {
+    const [categories, setCategories] = useState<CategoryData[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [pageByCategory, setPageByCategory] = useState<Record<string, number>>({});
+    const [visibleProducts, setVisibleProducts] = useState(3);
 
-const CategoryProductList: React.FC<CategoryProductListProps> = ({ categoriesData }) => {
-    const mockData: CategoryData[] = [
-        {
-            categoryName: 'CÀ PHÊ',
-            products: [
-                { id: '1', name: 'Cà phê sữa', size: 'M', description: 'Mô tả...', price: 30000, imageUrl: 'https://file.hstatic.net/200000605565/file/03_luu_y_de_tranh_sai_lam_khi_chon_ly_thuy_tinh_uong_cafe-1_f4b48b3c19c34a22851b4aa3fbfa627a.jpeg' },
-                { id: '2', name: 'Cà phê đen', size: 'M', description: 'Mô tả...', price: 25000, imageUrl: 'http://hcafe.vn/thumbs/540x540x1/upload/product/kin00954-2742.jpg' },
-                { id: '3', name: 'Cà phê cốt dừa', size: 'M', description: 'Mô tả...', price: 35000, imageUrl: 'https://saycoffee24h.vn/wp-content/uploads/2024/06/cach_pha_cafe_cot_dua_a02823aec1e14b228e950be3e321a834-683x1024.jpg' },
-                { id: '4', name: 'Cà phê sữa tươi', size: 'M', description: 'Mô tả...', price: 40000, imageUrl: 'https://caphenguyenchat.vn/wp-content/uploads/2023/11/ca-phe-sua-tuoi.jpg' },
-                { id: '5', name: 'Cà phê kem trứng', size: 'M', description: 'Mô tả...', price: 50000, imageUrl: 'https://rapido.vn/wp-content/uploads/2024/02/Quan_cafe_cacao_trung_Vung_Tau_Palma_9.jpeg' },
-                { id: '6', name: 'Bạc xĩu', size: 'M', description: 'Mô tả...', price: 50000, imageUrl: 'https://123coffee.vn/wp-content/uploads/2023/09/Bac-Xiu.png' },
-            ],
-        },
+    const handleToggleShowMore = async (categoryId: string) => {
+        const nextPage = (pageByCategory[categoryId] || 1) + 1;
+        setLoading(true);
+    
+        try {
+            const response = await fetch(`${API_URL}?page=${nextPage}&limit=3`);
+            const data = await response.json();
+    
+            if (data.success) {
+                setCategories((prevCategories) =>
+                    prevCategories.map((cat) =>
+                        cat.categoryId === categoryId
+                            ? {
+                                ...cat,
+                                products: [
+                                    ...cat.products,
+                                    ...(data.data.find((c: CategoryData) => c.categoryId === categoryId)?.products || []),
+                                ],
+                                currentPage: nextPage, // Cập nhật page
+                            }
+                            : cat
+                    )
+                );
+    
+                setPageByCategory((prev) => ({
+                    ...prev,
+                    [categoryId]: nextPage,
+                }));
+            }
+        } catch (error) {
+            console.error("Lỗi khi tải thêm sản phẩm:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        {
-            categoryName: 'ĐÁ XAY',
-            products: [
-                { id: '5', name: 'Matcha đá xay', size: 'M', description: 'Mô tả...', price: 30000, imageUrl: 'https://www.huongnghiepaau.com/wp-content/uploads/2016/10/cach-lam-matcha-da-xay.jpg' },
-                { id: '6', name: 'Chocolate đá xay', size: 'M', description: 'Mô tả...', price: 25000, imageUrl: 'https://www.bartender.edu.vn/wp-content/uploads/2016/02/socola-da-xay.jpg' },
-                { id: '7', name: 'Chocolate bạc hà đá xay', size: 'M', description: 'Mô tả...', price: 40000, imageUrl: 'https://thucphamplaza.com/wp-content/uploads/products_img/cong-thuc-pha-che-mint-choco-frappe.jpg' },
-                { id: '8', name: 'Dâu đá xay', size: 'M', description: 'Mô tả...', price: 50000, imageUrl: 'https://baristaschool.vn/wp-content/uploads/2022/10/Strawberry-Frappe-e1665849907843.jpg' },
-            ],
-        },
-    ];
+    // Gọi API để lấy dữ liệu ban đầu
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
-    // Data cuối cùng sẽ dùng
-    const dataToRender = categoriesData && categoriesData.length > 0 ? categoriesData : mockData;
+    const fetchProducts = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(`${API_URL}?page=1&limit=3`);
+            const data = await response.json();
 
-    // Mỗi danh mục sẽ được quản lý "bao nhiêu sản phẩm hiển thị" qua một state
-    // Dùng object: { "Cà phê": 3, "Đá xay": 3, ... }
-    const initialShowCount: Record<string, number> = {};
-    dataToRender.forEach((cate) => {
-        initialShowCount[cate.categoryName] = 3;
-    });
+            if (data.success) {
+                setCategories(data.data);
 
-    const [showCountByCategory, setShowCountByCategory] = useState<Record<string, number>>(initialShowCount);
+                // Lưu page hiện tại cho mỗi danh mục
+                const initialPages: Record<string, number> = {};
+                data.data.forEach((category: CategoryData) => {
+                    initialPages[category.categoryId] = 1;
+                });
+                setPageByCategory(initialPages);
+            }
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách sản phẩm:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    //Hàm xử lý khi nhấn Xem thêm....
-    const handleShowMore = (categoryName: string) => {
-        setShowCountByCategory((prev) => ({
-            ...prev,
-            [categoryName]: prev[categoryName] + 3,
-        }));
-    }
+    // Xử lý khi nhấn "Xem thêm"
+    const handleShowMore = async (categoryId: string) => {
+        try {
+            const nextPage = (pageByCategory[categoryId] || 1) + 1;
+            setLoading(true);
+            const response = await fetch(`${API_URL}?page=${nextPage}&limit=3`);
+            const data = await response.json();
 
+            if (data.success) {
+                setCategories((prevCategories) =>
+                    prevCategories.map((cat) =>
+                        cat.categoryId === categoryId
+                            ? {
+                                ...cat,
+                                products: [
+                                    ...cat.products,
+                                    ...(data.data.find((c: CategoryData) => c.categoryId === categoryId)?.products || []),
+                                ],
+                            }
+                            : cat
+                    )
+                );
+
+                // Cập nhật page hiện tại của danh mục
+                setPageByCategory((prev) => ({
+                    ...prev,
+                    [categoryId]: nextPage,
+                }));
+            }
+        } catch (error) {
+            console.error("Lỗi khi tải thêm sản phẩm:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <View style={styles.container}>
-            {dataToRender.map((category, index) => {
-                //Sắp xếp sản phẩm theo giá tăng dần
-                const sortedProducts = [...category.products].sort((a, b) => a.price - b.price);
+            {loading && <ActivityIndicator size="large" color="#0000ff" />}
 
-                // Giới hạn sản phẩm hiển thị
-                const showCount = showCountByCategory[category.categoryName];
-                const displayedProducts = sortedProducts.slice(0, showCount);
-
-                // Kiểm tra còn sản phẩm chưa hiển thị hay không
-                const hasMore = showCount < sortedProducts.length;
-                const remainCount = sortedProducts.length - showCount;
+            {categories.map((category) => {
+                const hasMore = category.currentPage < category.totalPages;
 
                 return (
-                    <View key={index} style={styles.categoryContainer}>
+                    <View key={category.categoryId} style={styles.categoryContainer}>
                         <Text style={styles.categoryTitle}>{category.categoryName}</Text>
 
-                        {/* Danh sách sản phẩm */}
-                        {displayedProducts.map((product) => (
+                         {/* Danh sách sản phẩm */}    
+                        {category.products.map((product) => (
                             <View key={product.id} style={styles.productContainer}>
                                 <View style={styles.imagePlaceholder}>
                                     {product.imageUrl ? (
@@ -101,13 +161,17 @@ const CategoryProductList: React.FC<CategoryProductListProps> = ({ categoriesDat
                                 <View style={styles.productInfo}>
                                     <Text style={styles.productName}>{product.name}</Text>
                                     <Text style={styles.productDesc}>{product.description}</Text>
-                                    <Text style={styles.productPrice}>{product.price} đ</Text>
-                                    {/* Button "Đặt mua" (demo) */}
+                                    
+                                    <View>
+                                        <Text style={styles.productPrice}>Size S: {product.price.S} đ</Text>
+                                        <Text style={styles.productPrice}>Size M: {product.price.M} đ</Text>
+                                        <Text style={styles.productPrice}>Size L: {product.price.L} đ</Text>
+                                    </View>
+
                                     <TouchableOpacity style={styles.buyButton}>
                                         <Text style={styles.buyButtonText}>Đặt mua</Text>
                                     </TouchableOpacity>
                                 </View>
-                                {/* Icon "heart" (yêu thích) demo */}
                                 <TouchableOpacity style={styles.favButton}>
                                     <Text style={styles.heartIcon}><AntDesign name="hearto" size={24} color="#DC5D5D" /></Text>
                                 </TouchableOpacity>
@@ -115,22 +179,148 @@ const CategoryProductList: React.FC<CategoryProductListProps> = ({ categoriesDat
                         ))}
 
                         {/* Nút "Xem thêm n sản phẩm [Tên danh mục]" */}
-                        {hasMore && (
+                        <TouchableOpacity
+                            onPress={() => handleToggleShowMore(category.categoryId)}
+                            style={styles.loadMoreButton}
+                        >
+                            <Text style={styles.loadMoreText}>
+                                {hasMore ? "Xem thêm sản phẩm" : "Thu gọn"}{" "}
+                                <Text style={{ fontWeight: "bold", textTransform: "uppercase" }}>
+                                    {category.categoryName}
+                                </Text>
+                            </Text>
+                        </TouchableOpacity>
+                        {/* {hasMore && (
                             <TouchableOpacity
-                                onPress={() => handleShowMore(category.categoryName)}
+                                onPress={() => handleShowMore(category.categoryId)}
                                 style={styles.loadMoreButton}
                             >
                                 <Text style={styles.loadMoreText}>
-                                    Xem thêm {remainCount} sản phẩm {category.categoryName}
+                                    Xem thêm sản phẩm <Text style={{ fontWeight: "bold", textTransform: "uppercase" }}>{category.categoryName}</Text>
                                 </Text>
                             </TouchableOpacity>
-                        )}
+                        )} */}
                     </View>
                 );
-            })};
+            })}
         </View>
     );
-};
+
+}
+
+
+
+// interface CategoryProductListProps {
+//     categoriesData?: CategoryData[];
+// }
+
+// const CategoryProductList: React.FC<CategoryProductListProps> = ({ categoriesData }) => {
+//     const mockData: CategoryData[] = [
+//         {
+//             categoryName: 'CÀ PHÊ',
+//             products: [
+//                 { id: '1', name: 'Cà phê sữa', size: 'M', description: 'Mô tả...', price: 30000, imageUrl: 'https://file.hstatic.net/200000605565/file/03_luu_y_de_tranh_sai_lam_khi_chon_ly_thuy_tinh_uong_cafe-1_f4b48b3c19c34a22851b4aa3fbfa627a.jpeg' },
+//                 { id: '2', name: 'Cà phê đen', size: 'M', description: 'Mô tả...', price: 25000, imageUrl: 'http://hcafe.vn/thumbs/540x540x1/upload/product/kin00954-2742.jpg' },
+//                 { id: '3', name: 'Cà phê cốt dừa', size: 'M', description: 'Mô tả...', price: 35000, imageUrl: 'https://saycoffee24h.vn/wp-content/uploads/2024/06/cach_pha_cafe_cot_dua_a02823aec1e14b228e950be3e321a834-683x1024.jpg' },
+//                 { id: '4', name: 'Cà phê sữa tươi', size: 'M', description: 'Mô tả...', price: 40000, imageUrl: 'https://caphenguyenchat.vn/wp-content/uploads/2023/11/ca-phe-sua-tuoi.jpg' },
+//                 { id: '5', name: 'Cà phê kem trứng', size: 'M', description: 'Mô tả...', price: 50000, imageUrl: 'https://rapido.vn/wp-content/uploads/2024/02/Quan_cafe_cacao_trung_Vung_Tau_Palma_9.jpeg' },
+//                 { id: '6', name: 'Bạc xĩu', size: 'M', description: 'Mô tả...', price: 50000, imageUrl: 'https://123coffee.vn/wp-content/uploads/2023/09/Bac-Xiu.png' },
+//             ],
+//         },
+
+//         {
+//             categoryName: 'ĐÁ XAY',
+//             products: [
+//                 { id: '5', name: 'Matcha đá xay', size: 'M', description: 'Mô tả...', price: 30000, imageUrl: 'https://www.huongnghiepaau.com/wp-content/uploads/2016/10/cach-lam-matcha-da-xay.jpg' },
+//                 { id: '6', name: 'Chocolate đá xay', size: 'M', description: 'Mô tả...', price: 25000, imageUrl: 'https://www.bartender.edu.vn/wp-content/uploads/2016/02/socola-da-xay.jpg' },
+//                 { id: '7', name: 'Chocolate bạc hà đá xay', size: 'M', description: 'Mô tả...', price: 40000, imageUrl: 'https://thucphamplaza.com/wp-content/uploads/products_img/cong-thuc-pha-che-mint-choco-frappe.jpg' },
+//                 { id: '8', name: 'Dâu đá xay', size: 'M', description: 'Mô tả...', price: 50000, imageUrl: 'https://baristaschool.vn/wp-content/uploads/2022/10/Strawberry-Frappe-e1665849907843.jpg' },
+//             ],
+//         },
+//     ];
+
+//     // Data cuối cùng sẽ dùng
+//     const dataToRender = categoriesData && categoriesData.length > 0 ? categoriesData : mockData;
+
+//     // Mỗi danh mục sẽ được quản lý "bao nhiêu sản phẩm hiển thị" qua một state
+//     // Dùng object: { "Cà phê": 3, "Đá xay": 3, ... }
+//     const initialShowCount: Record<string, number> = {};
+//     dataToRender.forEach((cate) => {
+//         initialShowCount[cate.categoryName] = 3;
+//     });
+
+//     const [showCountByCategory, setShowCountByCategory] = useState<Record<string, number>>(initialShowCount);
+
+//     //Hàm xử lý khi nhấn Xem thêm....
+//     const handleShowMore = (categoryName: string) => {
+//         setShowCountByCategory((prev) => ({
+//             ...prev,
+//             [categoryName]: prev[categoryName] + 3,
+//         }));
+//     }
+
+
+//     return (
+//         <View style={styles.container}>
+//             {dataToRender.map((category, index) => {
+//                 //Sắp xếp sản phẩm theo giá tăng dần
+//                 const sortedProducts = [...category.products].sort((a, b) => a.price - b.price);
+
+//                 // Giới hạn sản phẩm hiển thị
+//                 const showCount = showCountByCategory[category.categoryName];
+//                 const displayedProducts = sortedProducts.slice(0, showCount);
+
+//                 // Kiểm tra còn sản phẩm chưa hiển thị hay không
+//                 const hasMore = showCount < sortedProducts.length;
+//                 const remainCount = sortedProducts.length - showCount;
+
+//                 return (
+//                     <View key={index} style={styles.categoryContainer}>
+//                         <Text style={styles.categoryTitle}>{category.categoryName}</Text>
+
+//                         {/* Danh sách sản phẩm */}
+//                         {displayedProducts.map((product) => (
+//                             <View key={product.id} style={styles.productContainer}>
+//                                 <View style={styles.imagePlaceholder}>
+//                                     {product.imageUrl ? (
+//                                         <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
+//                                     ) : (
+//                                         <View style={styles.mockImage} />
+//                                     )}
+//                                 </View>
+//                                 <View style={styles.productInfo}>
+//                                     <Text style={styles.productName}>{product.name}</Text>
+//                                     <Text style={styles.productDesc}>{product.description}</Text>
+//                                     <Text style={styles.productPrice}>{product.price} đ</Text>
+//                                     {/* Button "Đặt mua" (demo) */}
+//                                     <TouchableOpacity style={styles.buyButton}>
+//                                         <Text style={styles.buyButtonText}>Đặt mua</Text>
+//                                     </TouchableOpacity>
+//                                 </View>
+//                                 {/* Icon "heart" (yêu thích) demo */}
+//                                 <TouchableOpacity style={styles.favButton}>
+//                                     <Text style={styles.heartIcon}><AntDesign name="hearto" size={24} color="#DC5D5D" /></Text>
+//                                 </TouchableOpacity>
+//                             </View>
+//                         ))}
+
+//                         {/* Nút "Xem thêm n sản phẩm [Tên danh mục]" */}
+//                         {hasMore && (
+//                             <TouchableOpacity
+//                                 onPress={() => handleShowMore(category.categoryName)}
+//                                 style={styles.loadMoreButton}
+//                             >
+//                                 <Text style={styles.loadMoreText}>
+//                                     Xem thêm {remainCount} sản phẩm {category.categoryName}
+//                                 </Text>
+//                             </TouchableOpacity>
+//                         )}
+//                     </View>
+//                 );
+//             })};
+//         </View>
+//     );
+// };
 
 export default CategoryProductList
 
@@ -143,10 +333,11 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     categoryTitle: {
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: 'bold',
         marginVertical: 10,
         color: '#6E3816',
+        textTransform: 'uppercase'
     },
     productContainer: {
         flexDirection: 'row',
@@ -166,8 +357,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     productImage: {
-        width: 100,
-        height: 100,
+        width: 110,
+        height: 130,
         borderRadius: 8,
         resizeMode: 'cover',
     },
@@ -193,10 +384,12 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     productPrice: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: 'bold',
         color: '#6E3816',
         marginBottom: 6,
+        flexDirection: 'column',
+
     },
     buyButton: {
         backgroundColor: '#6E3816',
