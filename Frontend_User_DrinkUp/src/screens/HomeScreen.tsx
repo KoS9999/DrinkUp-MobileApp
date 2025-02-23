@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Animated } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -21,6 +21,11 @@ const HomeScreen = () => {
   const swiperRef = useRef<Swiper>(null); // Tạo tham chiếu cho Swiper
   const [userName, setUserName] = useState('');
   const [topSellingProducts, setTopSellingProducts] = useState([]);
+
+  const openSearchScreen = () => {
+    navigation.navigate("SearchScreen"); // Điều hướng sang màn hình tìm kiếm
+  };
+
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -157,7 +162,12 @@ const HomeScreen = () => {
     <View style={styles.container}>
       <ScrollView style={styles.container}
                   contentContainerStyle={{ paddingBottom: 120 }}
-                  showsVerticalScrollIndicator={false}>
+                  showsVerticalScrollIndicator={false}>\
+                  
+        <Animated.View style={styles.headerBackground}>
+          
+        </Animated.View>
+
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
@@ -167,14 +177,39 @@ const HomeScreen = () => {
             />
             <View>
               <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.role}>{isLoggedIn ? userName : 'Khách'}</Text>
+              <View style={styles.authContainer}>
+                <Text style={styles.role}>{isLoggedIn ? userName : 'Khách'}</Text>
+                {/* Đăng ký / Đăng nhập */}
+                {isLoggedIn ? (
+                    <TouchableOpacity onPress={handleLogout} style={styles.authButton}>
+                      <Text style={styles.authButtonText}>ĐĂNG XUẤT</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
+                      <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
+                    </TouchableOpacity>   
+                )}
+                <MaterialIcons name="notifications-on" size={24} color="#6E3816" style={{marginLeft: 30}} />
+              </View> 
+
+              <View>
+              <TouchableOpacity onPress={openSearchScreen} activeOpacity={1}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Tìm kiếm sản phẩm..."
+                  placeholderTextColor="#999"
+                  editable={false} 
+                  //onChangeText={handleSearch} // Hàm xử lý khi nhập nội dung tìm kiếm
+                />
+              </TouchableOpacity>
+              </View>
             </View>
+
           </View>
-          <MaterialIcons name="notifications-on" size={24} color="#6E3816" />
         </View>
 
         {/* Đăng ký / Đăng nhập */}
-        {isLoggedIn ? (
+        {/* {isLoggedIn ? (
           <TouchableOpacity onPress={handleLogout} style={styles.authButton}>
             <Text style={styles.authButtonText}>ĐĂNG XUẤT</Text>
           </TouchableOpacity>
@@ -182,7 +217,7 @@ const HomeScreen = () => {
           <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.authButton}>
             <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
           </TouchableOpacity>   
-      )}
+        )} */}
         
 
         {/* Carousel */}
@@ -255,42 +290,58 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120, // Chiều cao của phần cong
+    backgroundColor: '#123456',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+  },
   container: {
     flex: 1,
     backgroundColor: 'white',
+  },
+  authContainer: {
+    flexDirection: 'row',
+    marginTop: 5
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    marginTop: 30,
+    marginTop: 130,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   profileImage: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
     backgroundColor: "#D9D9D9",
-    borderRadius: 20,
+    borderRadius: 25,
     marginRight: 8,
+    marginTop: -70
   },
   greeting: {
     //fontFamily: "Oswald-Regular",
-    fontSize: 14,
+    fontSize: 13,
     color: '#A2730C',
   },
   role: {
     //fontFamily: "Oswald-Regular",
-    fontSize: 12,
+    fontSize: 13,
     color: '#0A1858',
+    marginTop: 5
   },
   authButton: {
     backgroundColor: '#7EA172',
     marginHorizontal: 16,
-    paddingVertical: 12,
+    padding: 8,
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 16,
@@ -302,10 +353,19 @@ const styles = StyleSheet.create({
   },
   authButtonText: {
     //fontFamily: "Oswald-Regular",
-    fontSize: 16,
+    fontSize: 12,
     color: '#FFFFFF',
     alignItems: 'center',
-    alignContent: 'center'
+    alignContent: 'center',
+  },
+  searchInput: {
+    marginTop: 12, 
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
+    marginLeft: -60,
   },
   optionsContainer: {
     flexDirection: 'row',

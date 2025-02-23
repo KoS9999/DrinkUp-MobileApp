@@ -17,6 +17,7 @@ import AccountScreen from "../screens/AccountScreen";
 import UpdateProfileScreen from "../screens/UpdateProfileScreen";
 import UpdateEmailScreen from "../screens/UpdateEmailScreen";
 import UpdatePhoneScreen from "../screens/UpdatePhoneScreen";
+import SearchScreen from "../screens/SearchScreen";
 
 import FooterNavigation from "../components/FooterNavigation";
 
@@ -32,6 +33,7 @@ export type RootStackParamList = {
   UpdateProfileScreen: undefined;
   UpdateEmailScreen: undefined;
   UpdatePhoneScreen: undefined;
+  SearchScreen: undefined;
 };
 
 export type TabParamList = {
@@ -120,6 +122,11 @@ export default function AppNavigator() {
           options={{ headerShown: false }}
           name="Register"
           component={RegisterScreen}
+        />
+        <Stack.Screen
+          options={{ headerShown: false }}
+          name="SearchScreen"
+          component={SearchScreen}
         />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="PolicyScreen" component={PolicyScreen} />
