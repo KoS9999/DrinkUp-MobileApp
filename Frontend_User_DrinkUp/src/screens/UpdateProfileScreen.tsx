@@ -6,11 +6,14 @@ import { useNavigation } from "@react-navigation/native";
 import UpdateEmailScreen from "./UpdateEmailScreen";
 import UpdatePhoneScreen from "./UpdatePhoneScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import axios from 'axios';
 
-// const API_BASE_URL = "http://192.168.2.9:5001/api/user";
-const API_BASE_URL = "http://192.168.8.69:5000/api/user";
 
-// Hàm lấy token từ AsyncStorage
+
+const API_BASE_URL = "http://192.168.2.9:5001/api/user";
+//const API_BASE_URL = "http://192.168.8.69:5000/api/user";
+
 const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
 };
@@ -22,7 +25,7 @@ const UpdateProfile = () => {
   const [fieldToEdit, setFieldToEdit] = useState<"name" | "address" | null>(null);
   const [newValue, setNewValue] = useState("");
   const navigation = useNavigation();
-
+  
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -31,7 +34,7 @@ const UpdateProfile = () => {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, 
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -52,6 +55,60 @@ const UpdateProfile = () => {
     fetchProfile();
   }, []);
 
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+  
+    if (!result.canceled && result.assets && result.assets[0].uri) {
+      uploadProfileImage(result.assets[0].uri);  
+    }
+  };
+  const uploadProfileImage = async (uri: string) => {
+    const token = await getAuthToken();
+    const formData = new FormData();
+  
+    const fileUri = uri;
+    const fileName = fileUri.split('/').pop();
+    const fileType = fileUri.split('.').pop();
+  
+    console.log("Uploading file with URI:", fileUri); 
+  
+    try {
+      const blob = await fetch(fileUri).then((response) => response.blob());
+      console.log("Blob created:", blob);  
+  
+      formData.append('image', blob, fileName);
+  
+      console.log("Sending request to the server");  
+      const response = await fetch(`${API_BASE_URL}/update-profile-image`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+  
+      const result = await response.json();
+      console.log("Server response:", result); 
+      if (response.ok) {
+        setUser((prev: any) => ({ ...prev, profileImage: result.imageUrl }));
+        Alert.alert('Thành công', 'Cập nhật ảnh người dùng thành công.');
+      } else {
+        console.error('Error response:', result);
+        Alert.alert('Lỗi', `Không thể cập nhật ảnh: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Network Error:', error);
+      Alert.alert('Lỗi', 'Không thể kết nối với server. Vui lòng thử lại.');
+    }
+  };
+  
+
+  
   const updateField = async () => {
     if (!fieldToEdit || !newValue) return;
     try {
@@ -60,7 +117,7 @@ const UpdateProfile = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, 
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ [fieldToEdit]: newValue }),
       });
@@ -96,33 +153,18 @@ const UpdateProfile = () => {
           style={{ width: 100, height: 100, borderRadius: 50, alignSelf: "center", borderWidth: 2, borderColor: "#d3d3d3" }} 
         />
 
-        <TouchableOpacity onPress={() => {
-          //Handle click event 
-        }}>
-        <Text style={{ marginTop: 10, color: "white", fontWeight: "bold", alignSelf: "center" }}>
+        <TouchableOpacity onPress={pickImage}>
+          <Text style={{ marginTop: 10, color: "white", fontWeight: "bold", alignSelf: "center" }}>
             Đổi ảnh đại diện
-        </Text>
-
+          </Text>
         </TouchableOpacity>
 
-        {/* {[
-          { key: "name", label: "Tên", icon: "person-outline", editable: true },
-          { key: "email", label: "Email", icon: "email", editable: false, screen: "UpdateEmailScreen" },
-          { key: "phone", label: "Số điện thoại", icon: "phone", editable: false, screen: "UpdatePhoneScreen" },
-          { key: "address", label: "Địa chỉ", icon: "location-on",  editable: true },
-        ].map(({ key, label, icon, screen, editable }) =>{
-          <View key={key} style={styles.itemRow}>
-            
-          </View>
-        })
-        } */}
-
         {/* Thông tin người dùng */}
-        {[
+        {[ 
           { key: "name", label: "Tên", icon: "person-outline", editable: true },
           { key: "email", label: "Email", icon: "email", editable: false, screen: "UpdateEmailScreen" },
           { key: "phone", label: "Số điện thoại", icon: "phone", editable: false, screen: "UpdatePhoneScreen" },
-          { key: "address", label: "Địa chỉ", icon: "location-on",  editable: true },
+          { key: "address", label: "Địa chỉ", icon: "location-on", editable: true },
         ].map(({ key, label, icon, screen, editable }) => (
           <View key={key} style={styles.itemRow}>
             <MaterialIcons name={icon as never} size={24} color="#6B7280" style={styles.itemIcon} />
@@ -183,8 +225,8 @@ const styles = StyleSheet.create({
   },
 
   overlay: {
-    ...StyleSheet.absoluteFillObject, // Phủ toàn bộ ImageBackground
-    backgroundColor: 'rgba(106, 160, 186, 0.5)', // Màu xanh dương đậm với độ trong suốt 50%
+    ...StyleSheet.absoluteFillObject, 
+    backgroundColor: 'rgba(106, 160, 186, 0.5)', 
   },
 
   itemRow: {
@@ -196,8 +238,7 @@ const styles = StyleSheet.create({
   },
   itemIcon: {
     marginRight: 15,
-    color: "3F3F3F"
-
+    color: "#3F3F3F"
   },
   itemLabel: {
     fontSize: 14,
