@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native"; 
 
 // const API_BASE_URL = "http://192.168.2.9:5001/api/user";
-const API_BASE_URL = "http://192.168.8.69:5000/api/user";
+const API_BASE_URL = "http://192.168.1.131:5000/api/user";
 
 const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");

@@ -51,7 +51,7 @@ const RegisterScreen = () => {
 
     try {
       //const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
-      const response = await fetch('http://192.168.1.15:5001/api/auth/register', {
+      const response = await fetch('http://192.168.1.131:5000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ const RegisterScreen = () => {
 
     try {
       //const response = await fetch('http://192.168.2.6:5001/api/auth/register', {
-      const response = await fetch('http://192.168.1.15:5001/api/auth/register', {
+      const response = await fetch('http://192.168.1.131:5000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

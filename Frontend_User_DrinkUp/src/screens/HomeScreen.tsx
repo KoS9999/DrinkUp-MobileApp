@@ -12,6 +12,7 @@ import ProductCarousel from '../components/ProductCarousel';
 import CategoriesComponent from '../components/CategoriesComponent';
 import CategoryProductList from '../components/CategoryProductList';
 
+
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
 
 const HomeScreen = () => {
@@ -61,7 +62,7 @@ const HomeScreen = () => {
     const fetchTopSellingProducts = async () => {
       try {
         //const response = await fetch('http://192.168.2.9:5000/api/home/products/top-selling', {
-        const response = await fetch('http://172.0.0.133:5000/api/home/products/top-selling', {
+        const response = await fetch('http://192.168.1.131:5000/api/home/products/top-selling', {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",
@@ -165,7 +166,7 @@ const HomeScreen = () => {
                   showsVerticalScrollIndicator={false}>\
                   
         <Animated.View style={styles.headerBackground}>
-          
+          <Text style={styles.websiteName}>DrinkUp</Text>
         </Animated.View>
 
         {/* Header */}
@@ -189,7 +190,7 @@ const HomeScreen = () => {
                       <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
                     </TouchableOpacity>   
                 )}
-                <MaterialIcons name="notifications-on" size={24} color="#6E3816" style={{marginLeft: 30}} />
+                <MaterialIcons name="notifications-on" size={24} color="#6E3816" style={{marginLeft: 0}} />
               </View> 
 
               <View>
@@ -299,6 +300,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#123456',
     borderBottomLeftRadius: 40,
     borderBottomRightRadius: 40,
+    justifyContent: "center", // Căn giữa theo chiều dọc
+    alignItems: "center", // Căn giữa theo chiều ngang
+  },
+  websiteName: {
+    fontFamily: "Pacifico-Regular",
+    fontSize: 40,
+    color: '#FFFFFF',
+    marginBottom: 3, 
+    textShadowColor: "rgba(255, 215, 0, 0.8)", // Màu tỏa sáng vàng
+    textShadowOffset: { width: 0, height: 0 }, // Không dịch chuyển bóng
+    textShadowRadius: 15, // Bán kính tỏa sáng
   },
   container: {
     flex: 1,
@@ -340,7 +352,7 @@ const styles = StyleSheet.create({
   },
   authButton: {
     backgroundColor: '#7EA172',
-    marginHorizontal: 16,
+    marginHorizontal: 10,
     padding: 8,
     borderRadius: 8,
     alignItems: 'center',

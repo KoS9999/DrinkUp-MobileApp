@@ -6,7 +6,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.3;  
 const CARD_MARGIN = width * 0.1; 
-const API_BASE_URL = "http://192.168.2.9:5001/api/home/search-products"; 
+const API_BASE_URL = "http://192.168.1.131:5000/api/home/search-products"; 
 
 const SearchScreen = () => {
   const navigation = useNavigation();

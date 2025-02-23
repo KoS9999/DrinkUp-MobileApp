@@ -29,7 +29,7 @@ type CategoryData = {
     totalPages: number;
 }
 
-const API_URL = "http://172.0.0.133:5000/api/home/products/by-category";
+const API_URL = "http://192.168.1.131:5000/api/home/products/by-category";
 
 const CategoryProductList: React.FC = () => {
     const [categories, setCategories] = useState<CategoryData[]>([]);
@@ -38,10 +38,27 @@ const CategoryProductList: React.FC = () => {
     const [visibleProducts, setVisibleProducts] = useState(3);
 
     const handleToggleShowMore = async (categoryId: string) => {
-        const nextPage = (pageByCategory[categoryId] || 1) + 1;
         setLoading(true);
     
+        setCategories((prevCategories) =>
+            prevCategories.map((cat) =>
+                cat.categoryId === categoryId
+                    ? cat.currentPage > 1
+                        ? { ...cat, products: cat.products.slice(0, 3), currentPage: 1 } // Thu gọn về 3 sản phẩm
+                        : { ...cat, loadingMore: true } // Bắt đầu tải thêm sản phẩm
+                    : cat
+            )
+        );
+    
+        if (pageByCategory[categoryId] && pageByCategory[categoryId] > 1) {
+            // Nếu đã mở rộng, chỉ cần thu gọn mà không gọi API
+            setPageByCategory((prev) => ({ ...prev, [categoryId]: 1 }));
+            setLoading(false);
+            return;
+        }
+    
         try {
+            const nextPage = (pageByCategory[categoryId] || 1) + 1;
             const response = await fetch(`${API_URL}?page=${nextPage}&limit=3`);
             const data = await response.json();
     
@@ -55,7 +72,7 @@ const CategoryProductList: React.FC = () => {
                                     ...cat.products,
                                     ...(data.data.find((c: CategoryData) => c.categoryId === categoryId)?.products || []),
                                 ],
-                                currentPage: nextPage, // Cập nhật page
+                                currentPage: nextPage, // Cập nhật số trang hiện tại
                             }
                             : cat
                     )
