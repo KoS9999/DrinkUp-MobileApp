@@ -62,7 +62,7 @@ const HomeScreen = () => {
     const fetchTopSellingProducts = async () => {
       try {
         //const response = await fetch('http://192.168.2.9:5000/api/home/products/top-selling', {
-        const response = await fetch('http://192.168.1.131:5000/api/home/products/top-selling', {
+        const response = await fetch('http://192.168.8.69:5000/api/home/products/top-selling', {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",
@@ -163,7 +163,7 @@ const HomeScreen = () => {
     <View style={styles.container}>
       <ScrollView style={styles.container}
                   contentContainerStyle={{ paddingBottom: 120 }}
-                  showsVerticalScrollIndicator={false}>\
+                  showsVerticalScrollIndicator={false}>
                   
         <Animated.View style={styles.headerBackground}>
           <Text style={styles.websiteName}>DrinkUp</Text>
@@ -378,6 +378,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
     marginLeft: -60,
+    marginRight: -60,
+    position: 'relative'
   },
   optionsContainer: {
     flexDirection: 'row',

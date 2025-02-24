@@ -29,7 +29,7 @@ type CategoryData = {
     totalPages: number;
 }
 
-const API_URL = "http://192.168.1.131:5000/api/home/products/by-category";
+const API_URL = "http://192.168.8.69:5000/api/home/products/by-category";
 
 const CategoryProductList: React.FC = () => {
     const [categories, setCategories] = useState<CategoryData[]>([]);

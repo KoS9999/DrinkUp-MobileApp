@@ -11,7 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 
 
 
-const API_BASE_URL = "http://192.168.1.131:5000/api/user";
+const API_BASE_URL = "http://192.168.8.69:5000/api/user";
 //const API_BASE_URL = "http://192.168.8.69:5000/api/user";
 
 const getAuthToken = async () => {
@@ -25,7 +25,7 @@ const UpdateProfile = () => {
   const [fieldToEdit, setFieldToEdit] = useState<"name" | "address" | null>(null);
   const [newValue, setNewValue] = useState("");
   const navigation = useNavigation();
-  
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -57,58 +57,91 @@ const UpdateProfile = () => {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      cameraType: ImagePicker.CameraType.front,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
     });
-  
+
     if (!result.canceled && result.assets && result.assets[0].uri) {
-      uploadProfileImage(result.assets[0].uri);  
+      uploadProfileImage(result.assets[0].uri);
     }
   };
   const uploadProfileImage = async (uri: string) => {
     const token = await getAuthToken();
     const formData = new FormData();
-  
+
     const fileUri = uri;
-    const fileName = fileUri.split('/').pop();
-    const fileType = fileUri.split('.').pop();
-  
-    console.log("Uploading file with URI:", fileUri); 
-  
+    const fileName = fileUri.split('/').pop() ?? "default.jpg";
+    const fileType = fileName.split(".").pop() ?? "jpg";
+
+    console.log("Uploading file with URI:", fileUri);
+
+    // Đổi URI sang Blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
+
+    formData.append("image", {
+      uri: fileUri,
+      name: fileName,
+      type: `image/${fileType}`,
+    } as any);
+    
     try {
-      const blob = await fetch(fileUri).then((response) => response.blob());
-      console.log("Blob created:", blob);  
-  
-      formData.append('image', blob, fileName);
-  
-      console.log("Sending request to the server");  
-      const response = await fetch(`${API_BASE_URL}/update-profile-image`, {
-        method: 'PUT',
+      const uploadResponse = await fetch(`${API_BASE_URL}/update-profile-image`, {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
         body: formData,
       });
-  
-      const result = await response.json();
-      console.log("Server response:", result); 
-      if (response.ok) {
+
+      const result = await uploadResponse.json();
+      console.log("Server response:", result);
+
+      if (uploadResponse.ok) {
         setUser((prev: any) => ({ ...prev, profileImage: result.imageUrl }));
-        Alert.alert('Thành công', 'Cập nhật ảnh người dùng thành công.');
+        Alert.alert("Thành công", "Cập nhật ảnh người dùng thành công.");
       } else {
-        console.error('Error response:', result);
-        Alert.alert('Lỗi', `Không thể cập nhật ảnh: ${result.message}`);
+        Alert.alert("Lỗi", `Không thể cập nhật ảnh: ${result.message}`);
       }
     } catch (error) {
-      console.error('Network Error:', error);
-      Alert.alert('Lỗi', 'Không thể kết nối với server. Vui lòng thử lại.');
+      console.error("Network Error:", error);
+      Alert.alert("Lỗi", "Không thể kết nối với server. Vui lòng thử lại.");
     }
-  };
-  
 
-  
+    // try {
+    //   const blob = await fetch(fileUri).then((response) => response.blob());
+    //   console.log("Blob created:", blob);  
+
+    //   formData.append('image', blob, fileName);
+
+    //   console.log("Sending request to the server");  
+    //   const response = await fetch(`${API_BASE_URL}/update-profile-image`, {
+    //     method: 'PUT',
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //     body: formData,
+    //   });
+
+    //   const result = await response.json();
+    //   console.log("Server response:", result); 
+    //   if (response.ok) {
+    //     setUser((prev: any) => ({ ...prev, profileImage: result.imageUrl }));
+    //     Alert.alert('Thành công', 'Cập nhật ảnh người dùng thành công.');
+    //   } else {
+    //     console.error('Error response:', result);
+    //     Alert.alert('Lỗi', `Không thể cập nhật ảnh: ${result.message}`);
+    //   }
+    // } catch (error) {
+    //   console.error('Network Error:', error);
+
+    //   Alert.alert('Lỗi', 'Không thể kết nối với server. Vui lòng thử lại.');
+    // }
+  };
+
   const updateField = async () => {
     if (!fieldToEdit || !newValue) return;
     try {
@@ -138,19 +171,19 @@ const UpdateProfile = () => {
   if (loading) return <Text>Đang tải thông tin...</Text>;
 
   return (
-    <ImageBackground 
+    <ImageBackground
       source={require('../assets/images/background-update-profile-1.png')}
       style={styles.background}
       resizeMode="cover"
       blurRadius={3}
     >
-    <View style={styles.overlay} />
+      <View style={styles.overlay} />
 
       <View style={{ flex: 1, padding: 20 }}>
         {/* Ảnh đại diện */}
-        <Image 
-          source={ user?.profileImage ? { uri: user.profileImage } : require('../assets/images/logo-drinkup.png') } 
-          style={{ width: 100, height: 100, borderRadius: 50, alignSelf: "center", borderWidth: 2, borderColor: "#d3d3d3" }} 
+        <Image
+          source={user?.profileImage ? { uri: user.profileImage } : require('../assets/images/logo-drinkup.png')}
+          style={{ width: 100, height: 100, borderRadius: 50, alignSelf: "center", borderWidth: 2, borderColor: "#d3d3d3" }}
         />
 
         <TouchableOpacity onPress={pickImage}>
@@ -160,7 +193,7 @@ const UpdateProfile = () => {
         </TouchableOpacity>
 
         {/* Thông tin người dùng */}
-        {[ 
+        {[
           { key: "name", label: "Tên", icon: "person-outline", editable: true },
           { key: "email", label: "Email", icon: "email", editable: false, screen: "UpdateEmailScreen" },
           { key: "phone", label: "Số điện thoại", icon: "phone", editable: false, screen: "UpdatePhoneScreen" },
@@ -173,8 +206,8 @@ const UpdateProfile = () => {
               <Text style={styles.itemValue}>{user?.[key] || ""}</Text>
             </View>
 
-            <TouchableOpacity 
-              style={styles.editButton} 
+            <TouchableOpacity
+              style={styles.editButton}
               onPress={() => {
                 if (screen) navigation.navigate(screen as never);
                 else { setFieldToEdit(key as any); setModalVisible(true); }
@@ -225,8 +258,8 @@ const styles = StyleSheet.create({
   },
 
   overlay: {
-    ...StyleSheet.absoluteFillObject, 
-    backgroundColor: 'rgba(106, 160, 186, 0.5)', 
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(106, 160, 186, 0.5)',
   },
 
   itemRow: {
