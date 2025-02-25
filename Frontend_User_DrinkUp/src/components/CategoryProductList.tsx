@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { MaterialIcons, AntDesign } from '@expo/vector-icons';
+import HorizontalProductCard from './HorizontalProductCard';
 
 type Product = {
-    id: string;
+    _id: string;
     name: string;
-    size?: string;
-    description: string;
+    description?: string;
     price: {
         S: number;
         M: number;
         L: number;
     };
+    category: string;
     imageUrl?: string;
+    toppings: { _id: string; name: string; price: number }[];
+    createdAt: string;
 }
-
-// type CategoryData = {
-//     categoryName: string;
-//     products: Product[];
-// }
-
 
 type CategoryData = {
     categoryId: string;
@@ -29,7 +26,7 @@ type CategoryData = {
     totalPages: number;
 }
 
-const API_URL = "http://192.168.8.69:5000/api/home/products/by-category";
+const API_URL = "http://192.168.1.131:5000/api/home/products/by-category";
 
 const CategoryProductList: React.FC = () => {
     const [categories, setCategories] = useState<CategoryData[]>([]);
@@ -39,7 +36,7 @@ const CategoryProductList: React.FC = () => {
 
     const handleToggleShowMore = async (categoryId: string) => {
         setLoading(true);
-    
+
         setCategories((prevCategories) =>
             prevCategories.map((cat) =>
                 cat.categoryId === categoryId
@@ -49,19 +46,19 @@ const CategoryProductList: React.FC = () => {
                     : cat
             )
         );
-    
+
         if (pageByCategory[categoryId] && pageByCategory[categoryId] > 1) {
             // Nếu đã mở rộng, chỉ cần thu gọn mà không gọi API
             setPageByCategory((prev) => ({ ...prev, [categoryId]: 1 }));
             setLoading(false);
             return;
         }
-    
+
         try {
             const nextPage = (pageByCategory[categoryId] || 1) + 1;
             const response = await fetch(`${API_URL}?page=${nextPage}&limit=3`);
             const data = await response.json();
-    
+
             if (data.success) {
                 setCategories((prevCategories) =>
                     prevCategories.map((cat) =>
@@ -77,7 +74,7 @@ const CategoryProductList: React.FC = () => {
                             : cat
                     )
                 );
-    
+
                 setPageByCategory((prev) => ({
                     ...prev,
                     [categoryId]: nextPage,
@@ -118,42 +115,6 @@ const CategoryProductList: React.FC = () => {
         }
     };
 
-    // Xử lý khi nhấn "Xem thêm"
-    const handleShowMore = async (categoryId: string) => {
-        try {
-            const nextPage = (pageByCategory[categoryId] || 1) + 1;
-            setLoading(true);
-            const response = await fetch(`${API_URL}?page=${nextPage}&limit=3`);
-            const data = await response.json();
-
-            if (data.success) {
-                setCategories((prevCategories) =>
-                    prevCategories.map((cat) =>
-                        cat.categoryId === categoryId
-                            ? {
-                                ...cat,
-                                products: [
-                                    ...cat.products,
-                                    ...(data.data.find((c: CategoryData) => c.categoryId === categoryId)?.products || []),
-                                ],
-                            }
-                            : cat
-                    )
-                );
-
-                // Cập nhật page hiện tại của danh mục
-                setPageByCategory((prev) => ({
-                    ...prev,
-                    [categoryId]: nextPage,
-                }));
-            }
-        } catch (error) {
-            console.error("Lỗi khi tải thêm sản phẩm:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     return (
         <View style={styles.container}>
             {loading && <ActivityIndicator size="large" color="#0000ff" />}
@@ -165,34 +126,9 @@ const CategoryProductList: React.FC = () => {
                     <View key={category.categoryId} style={styles.categoryContainer}>
                         <Text style={styles.categoryTitle}>{category.categoryName}</Text>
 
-                         {/* Danh sách sản phẩm */}    
+                        {/* Render danh sách sản phẩm bằng ProductCard */}
                         {category.products.map((product) => (
-                            <View key={product.id} style={styles.productContainer}>
-                                <View style={styles.imagePlaceholder}>
-                                    {product.imageUrl ? (
-                                        <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
-                                    ) : (
-                                        <View style={styles.mockImage} />
-                                    )}
-                                </View>
-                                <View style={styles.productInfo}>
-                                    <Text style={styles.productName}>{product.name}</Text>
-                                    <Text style={styles.productDesc}>{product.description}</Text>
-                                    
-                                    <View>
-                                        <Text style={styles.productPrice}>Size S: {product.price.S} đ</Text>
-                                        <Text style={styles.productPrice}>Size M: {product.price.M} đ</Text>
-                                        <Text style={styles.productPrice}>Size L: {product.price.L} đ</Text>
-                                    </View>
-
-                                    <TouchableOpacity style={styles.buyButton}>
-                                        <Text style={styles.buyButtonText}>Đặt mua</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                <TouchableOpacity style={styles.favButton}>
-                                    <Text style={styles.heartIcon}><AntDesign name="hearto" size={24} color="#DC5D5D" /></Text>
-                                </TouchableOpacity>
-                            </View>
+                            <HorizontalProductCard key={product._id} product={product} />
                         ))}
 
                         {/* Nút "Xem thêm n sản phẩm [Tên danh mục]" */}

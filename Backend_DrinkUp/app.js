@@ -6,6 +6,7 @@ const connectDB = require('./src/config/database');
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const homeRoutes = require('./src/routes/homeRoutes');
+const productRoutes = require('./src/routes/productRoutes');
 
 
 connectDB();
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/home', homeRoutes);
+app.use('/api/product', productRoutes);
 
 
 const PORT = process.env.PORT || 5000;
