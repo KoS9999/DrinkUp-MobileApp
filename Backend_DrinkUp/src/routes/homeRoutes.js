@@ -6,5 +6,5 @@ router.get('/categories', homeController.getAllCategories);
 router.get('/products/top-selling', homeController.getTopSellingProducts);
 router.get('/products/by-category', homeController.getProductsByCategory);
 router.get('/search-products', homeController.searchProducts);
-
+router.get("/filter-sort", homeController.filterAndSortProducts);
 module.exports = router;
