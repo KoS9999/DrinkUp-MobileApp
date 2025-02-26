@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { MaterialIcons, AntDesign } from '@expo/vector-icons';
 import HorizontalProductCard from './HorizontalProductCard';
+import { API_BASE_URL } from "../config/api";
 
 type Product = {
     _id: string;
@@ -26,7 +27,6 @@ type CategoryData = {
     totalPages: number;
 }
 
-const API_URL = "http://192.168.1.131:5000/api/home/products/by-category";
 
 const CategoryProductList: React.FC = () => {
     const [categories, setCategories] = useState<CategoryData[]>([]);
@@ -56,7 +56,7 @@ const CategoryProductList: React.FC = () => {
 
         try {
             const nextPage = (pageByCategory[categoryId] || 1) + 1;
-            const response = await fetch(`${API_URL}?page=${nextPage}&limit=3`);
+            const response = await fetch(`${API_BASE_URL}/home/products/by-category?page=${nextPage}&limit=3`);
             const data = await response.json();
 
             if (data.success) {
@@ -95,7 +95,7 @@ const CategoryProductList: React.FC = () => {
     const fetchProducts = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API_URL}?page=1&limit=3`);
+            const response = await fetch(`${API_BASE_URL}/home/products/by-category?page=1&limit=3`);
             const data = await response.json();
 
             if (data.success) {

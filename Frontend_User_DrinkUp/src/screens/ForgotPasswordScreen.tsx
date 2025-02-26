@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { Entypo } from '@expo/vector-icons';
+import { API_BASE_URL } from "../config/api";
+
 
 type ForgotPasswordScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ForgotPassword'>;
 
@@ -24,7 +26,7 @@ const ForgotPasswordScreen = () => {
 
     try {
       //  const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
-      const response = await fetch('http://192.168.8.69:5000/api/auth/forgot-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,8 +60,7 @@ const ForgotPasswordScreen = () => {
     }
 
     try {
-      // const response = await fetch('http://192.168.2.6:5001/api/auth/forgot-password', {
-      const response = await fetch('http://192.168.8.69:5000/api/auth/forgot-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

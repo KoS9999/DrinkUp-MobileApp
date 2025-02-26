@@ -1,7 +1,7 @@
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
+import { API_BASE_URL } from "../config/api";
 
-const API_BASE_URL = "http://192.168.8.69:5000/api/home/categories";
 
 interface Category {
     id: string;
@@ -46,7 +46,7 @@ const CategoriesComponent = () => {
 
     const fetchCategories = async () => {
         try {
-          const response = await fetch(API_BASE_URL);
+          const response = await fetch(`${API_BASE_URL}/home/categories`);
           const text = await response.text();
           // console.log("Raw API Response: ", text);
           

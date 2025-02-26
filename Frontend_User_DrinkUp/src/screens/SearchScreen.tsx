@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet, Alert ,Image, ActivityIndicator, Dimensions  } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { API_BASE_URL } from "../config/api";
+
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.3;  
 const CARD_MARGIN = width * 0.1; 
-const API_BASE_URL = "http://192.168.8.69:5000/api/home/search-products"; 
 
 const SearchScreen = () => {
   const navigation = useNavigation();
@@ -25,7 +26,7 @@ const SearchScreen = () => {
     setLoading(true); 
 
     try {
-      const response = await fetch(`${API_BASE_URL}?query=${text}`);
+      const response = await fetch(`${API_BASE_URL}/home/search-products?query=${text}`);
       const data = await response.json();
 
       if (response.ok) {

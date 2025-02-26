@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native"; 
+import { useNavigation } from "@react-navigation/native";
+import { API_BASE_URL } from "../config/api";
 
-// const API_BASE_URL = "http://192.168.2.9:5001/api/user";
-const API_BASE_URL = "http://192.168.8.69:5000/api/user";
+
 
 const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
@@ -25,7 +25,7 @@ const UpdateEmailScreen = () => {
 
     try {
       const token = await getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/update-email`, {
+      const response = await fetch(`${API_BASE_URL}/user/update-email`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -49,7 +49,7 @@ const UpdateEmailScreen = () => {
   const verifyCurrentEmailOtp = async () => {
     try {
       const token = await getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/update-email`, {
+      const response = await fetch(`${API_BASE_URL}/user/update-email`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -73,7 +73,7 @@ const UpdateEmailScreen = () => {
   const updateEmail = async () => {
     try {
       const token = await getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/update-email`, {
+      const response = await fetch(`${API_BASE_URL}/user/update-email`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -5,6 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { FontAwesome5, FontAwesome, Entypo } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from "../config/api";
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -23,8 +24,7 @@ const LoginScreen = () => {
     }
   
     try {
-      // response = await fetch('http://192.168.2.6:5001/api/auth/login', {
-      const response = await fetch('http://192.168.8.69:5000/api/auth/login',{
+      const response = await fetch(`${API_BASE_URL}/auth/login`,{
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

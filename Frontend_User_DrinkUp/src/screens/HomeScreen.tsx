@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductCarousel from '../components/ProductCarousel';
 import CategoriesComponent from '../components/CategoriesComponent';
 import CategoryProductList from '../components/CategoryProductList';
+import { API_BASE_URL } from "../config/api";
+
 
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeScreen'>;
@@ -61,8 +63,7 @@ const HomeScreen = () => {
   useEffect(() => {
     const fetchTopSellingProducts = async () => {
       try {
-        //const response = await fetch('http://192.168.2.9:5000/api/home/products/top-selling', {
-        const response = await fetch('http://192.168.8.69:5000/api/home/products/top-selling', {
+        const response = await fetch(`${API_BASE_URL}/home/products/top-selling`, {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",

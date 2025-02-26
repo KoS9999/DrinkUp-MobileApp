@@ -8,11 +8,7 @@ import UpdatePhoneScreen from "./UpdatePhoneScreen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 //import axios from 'axios';
-
-
-
-const API_BASE_URL = "http://192.168.8.69:5000/api/user";
-//const API_BASE_URL = "http://192.168.8.69:5000/api/user";
+import { API_BASE_URL } from "../config/api";
 
 const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
@@ -30,7 +26,7 @@ const UpdateProfile = () => {
     const fetchProfile = async () => {
       try {
         const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/profile`, {
+        const response = await fetch(`${API_BASE_URL}/user/profile`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -88,7 +84,7 @@ const UpdateProfile = () => {
     } as any);
     
     try {
-      const uploadResponse = await fetch(`${API_BASE_URL}/update-profile-image`, {
+      const uploadResponse = await fetch(`${API_BASE_URL}/user/update-profile-image`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -146,7 +142,7 @@ const UpdateProfile = () => {
     if (!fieldToEdit || !newValue) return;
     try {
       const token = await getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/update-profile`, {
+      const response = await fetch(`${API_BASE_URL}/user/update-profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

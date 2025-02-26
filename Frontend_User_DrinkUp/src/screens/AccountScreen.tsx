@@ -6,6 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from "../navigators/AppNavigator";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { API_BASE_URL } from "../config/api";
+
 
 type TabItem = {
   label: string;

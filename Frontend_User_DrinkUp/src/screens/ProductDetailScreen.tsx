@@ -3,6 +3,8 @@ import { View, Text, Image, TouchableOpacity, ActivityIndicator, TextInput, Styl
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { AntDesign } from "@expo/vector-icons";
 import { useFonts } from 'expo-font';
+import { API_BASE_URL } from "../config/api";
+
 
 interface Topping {
     name: string;
@@ -35,7 +37,7 @@ const ProductDetailScreen: React.FC = () => {
 
 
     useEffect(() => {
-        fetch(`http://192.168.1.131:5000/api/product/get-product/${productId}`)
+        fetch(`${API_BASE_URL}/product/get-product/${productId}`)
             .then((res) => res.json())
             .then((data) => {
                 console.log("Fetched data:", data);
