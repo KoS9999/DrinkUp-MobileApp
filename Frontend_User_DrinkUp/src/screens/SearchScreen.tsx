@@ -1,190 +1,231 @@
-import React, { useState } from "react";
-import { View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet, Alert ,Image, ActivityIndicator, Dimensions  } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet, 
+  Alert, Image, ActivityIndicator, Dimensions, ScrollView, Animated
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { API_BASE_URL } from "../config/api";
 
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = width * 0.3;  
-const CARD_MARGIN = width * 0.1; 
+const { width } = Dimensions.get("window");
+const INITIAL_CATEGORY_WIDTH = width * 0.15; 
+const COLLAPSED_CATEGORY_WIDTH = width * 0.05; 
+const CARD_WIDTH = (width - INITIAL_CATEGORY_WIDTH - 50) / 2; 
+const CARD_MARGIN = 10;
 
 const SearchScreen = () => {
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState("");
-  const [results, setResults] = useState<any[]>([]); 
-  const [loading, setLoading] = useState(false); 
+  const [results, setResults] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [sortBy, setSortBy] = useState(""); 
+  const [orderBy, setOrderBy] = useState("asc"); 
+  const [orderByPrice, setOrderByPrice] = useState("asc"); 
+  const [orderByName, setOrderByName] = useState("asc"); 
+  const [loading, setLoading] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const categoryWidth = new Animated.Value(INITIAL_CATEGORY_WIDTH);
 
-  const handleSearch = async (text: string) => {
-    setSearchText(text);
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, []);
 
-    if (!text.trim()) {
-      setResults([]); 
-      return;
-    }
+  useEffect(() => {
+    fetchProducts();
+  }, [sortBy, orderBy, selectedCategory]);
 
-    setLoading(true); 
-
+  const fetchCategories = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/home/search-products?query=${text}`);
+      const response = await fetch(`${API_BASE_URL}/home/categories`);
       const data = await response.json();
-
       if (response.ok) {
-        setResults(data.data.products);
+        setCategories(data.data);
       } else {
-        Alert.alert("Lỗi", "Không tìm thấy sản phẩm.");
+        Alert.alert("Lỗi", "Không thể tải danh mục.");
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Lỗi khi gọi API.");
-    } finally {
-      setLoading(false); 
+      Alert.alert("Lỗi", "Lỗi khi tải danh mục.");
     }
   };
 
-  const renderItem = ({ item }: { item: any }) => {
-    return (
-      <View style={styles.card}>
-        <Image source={{ uri: item.imageUrl }} style={styles.image} />
-        <Text style={styles.productName}>{item.name}</Text>
-  
-        {/* Hiển thị giá theo size */}
-        <View style={styles.sizeContainer}>
-          {(item.size || []).map((size: string) => (  
-            <View key={size} style={styles.sizeBox}>
-              <Text style={styles.sizeText}>{size}</Text>
-              <Text style={styles.priceText}>{item.price[size]}đ</Text>
-            </View>
-          ))}
-        </View>
-  
-        <TouchableOpacity style={styles.addButton}>
-          <MaterialIcons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    );
+  const fetchProducts = async () => {
+    setLoading(true);
+    let url = `${API_BASE_URL}/home/filter-sort?page=1&limit=10`;
+
+    if (searchText) url += `&query=${searchText}`;
+    if (selectedCategory) url += `&category=${selectedCategory}`;
+
+    if (sortBy) {
+        const currentOrder = sortBy === "price" ? orderByPrice : orderByName;
+        url += `&sortBy=${sortBy}&order=${currentOrder}`;
+    }
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (response.ok) {
+            setResults(data.data.products);
+        } else {
+            setResults([]);
+        }
+    } catch (error) {
+        Alert.alert("Lỗi", "Lỗi khi gọi API.");
+    } finally {
+        setLoading(false);
+    }
   };
-  
+
+  const handleToggleCategory = () => {
+    Animated.timing(categoryWidth, {
+      toValue: isCollapsed ? INITIAL_CATEGORY_WIDTH : COLLAPSED_CATEGORY_WIDTH,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const handleSearch = (text: string) => {
+    setSearchText(text);
+    fetchProducts();
+  };
+
+  const handleSortByPrice = () => {
+    setSortBy("price");
+    setOrderByPrice(orderByPrice === "asc" ? "desc" : "asc");
+    fetchProducts();
+  };
+
+  const handleSortByName = () => {
+    setSortBy("name");
+    setOrderByName(orderByName === "asc" ? "desc" : "asc");
+    fetchProducts();
+  };
+
+  const renderItem = ({ item }: { item: any }) => (
+    <View style={styles.card}>
+      <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.priceText}>Size S: {item.price.S}đ</Text>
+      <TouchableOpacity style={styles.addButton}>
+        <MaterialIcons name="add" size={24} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
       {/* Thanh tìm kiếm */}
       <View style={styles.searchBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}><MaterialIcons name="arrow-back" size={24} color="black" /></Text>
+            <MaterialIcons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Tìm kiếm sản phẩm..."
-          placeholderTextColor="#999"
-          value={searchText}
-          onChangeText={handleSearch}
-          autoFocus={true} 
-        />
-        <TouchableOpacity onPress={() => handleSearch(searchText)}>
-          <MaterialIcons name="search" size={24} color="black" />
+
+        <View style={styles.searchInputContainer}>
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Tìm kiếm sản phẩm..."
+                placeholderTextColor="#999"
+                value={searchText}
+                onChangeText={handleSearch}
+                autoFocus={true}
+            />
+            
+            {/* Nút X bên trong TextInput */}
+            {searchText.length > 0 && (
+                <TouchableOpacity 
+                    style={styles.clearButton} 
+                    onPress={() => {
+                        setSearchText(""); 
+                        fetchProducts();
+                    }}>
+                    <MaterialIcons name="close" size={20} color="gray" />
+                </TouchableOpacity>
+            )}
+        </View>
+
+        <TouchableOpacity onPress={() => fetchProducts()}>
+            <MaterialIcons name="search" size={24} color="black" />
         </TouchableOpacity>
       </View>
 
-      {/* Hiển thị kết quả tìm kiếm */}
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : (
-        <FlatList
-        data={results}
-        keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()} 
-        renderItem={renderItem} 
-        horizontal={false} 
-        numColumns={2} 
-        contentContainerStyle={{ paddingHorizontal: CARD_MARGIN }}
-      />
+      <View style={styles.contentContainer}>
+        {/* Danh mục bên trái với khả năng thu gọn */}
+        <Animated.View style={[styles.categoryContainer, { width: categoryWidth }]}>
+          <TouchableOpacity onPress={handleToggleCategory} style={styles.toggleButton}>
+            <MaterialIcons name={isCollapsed ? "keyboard-arrow-down" : "keyboard-arrow-up"} size={24} color="black" />
+          </TouchableOpacity>
 
-      )}
+          {!isCollapsed && (
+            <ScrollView>
+              {categories.map((category) => (
+                <TouchableOpacity 
+                  key={category.id} 
+                  style={[styles.categoryItem, selectedCategory === category.name && styles.selectedCategory]}
+                  onPress={() => setSelectedCategory(category.name)}
+                >
+                  <Text style={styles.categoryText}>{category.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </Animated.View>
+
+        {/* Sản phẩm */}
+        <View style={styles.productContainer}>
+          <View style={styles.filterRow}>
+            <TouchableOpacity onPress={handleSortByPrice} style={styles.filterButton}>
+                <Text style={styles.filterText}>Giá {sortBy === "price" ? (orderByPrice === "asc" ? "↑" : "↓") : ""}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSortByName} style={styles.filterButton}>
+                <Text style={styles.filterText}>Tên {sortBy === "name" ? (orderByName === "asc" ? "A-Z" : "Z-A") : ""}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#0000ff" />
+          ) : (
+            <FlatList
+              data={results}
+              keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()} 
+              renderItem={renderItem} 
+              numColumns={2} 
+              contentContainerStyle={{ paddingHorizontal: CARD_MARGIN }}
+            />
+          )}
+        </View>
+      </View>
     </View>
   );
 };
-
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 40,
-    flex: 1,
-    padding: 16,
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  backButton: {
-    fontSize: 18,
-    marginLeft: -10,
-    paddingRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    backgroundColor: "#fff",
-  },
-  card: {
-    width: CARD_WIDTH,
-    marginHorizontal: CARD_MARGIN / 3,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingBottom: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-    alignItems: "center",
-    marginBottom: 20,  
-  },
-  image: {
-    width: "100%",
-    height: 150,  
-    borderRadius: 12,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginTop: 8,
-    textAlign: "center",
-  },
-  sizeContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginVertical: 8,
-  },
-  sizeBox: {
-    alignItems: "center",
-    marginHorizontal: 6,
-  },
-  sizeText: {
-    fontSize: 12,
-    color: "#555",
-    marginHorizontal: 4,
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-    backgroundColor: "#f0f0f0",
-  },
-  priceText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#A2730C",
-    marginTop: 2,
-  },
-  addButton: {
-    backgroundColor: "#7EA172",
-    borderRadius: 20,
-    padding: 6,
-    marginTop: 10,
-  },
-});
+  container: { flex: 1, paddingTop: 40 },
+  searchBar: { flexDirection: "row", alignItems: "center", marginBottom: 10,},
+  searchInputContainer: { flex: 1, position: "relative", },
+  searchInput: { height: 40, borderWidth: 1, borderColor: "#ccc", borderRadius: 15, paddingHorizontal: 20, backgroundColor: "#fff",},
+  clearButton: { position: "absolute", right: 5, top: "35%", transform: [{ translateY: -10 }], padding: 5},
 
+  contentContainer: { flexDirection: "row", flex: 1 },
+  categoryContainer: { backgroundColor: "#f8f8f8", paddingVertical: 5, paddingHorizontal: 5 },
+  categoryItem: { paddingVertical: 5, paddingHorizontal: 8, alignItems: "center" },
+  selectedCategory: { backgroundColor: "#ddd", borderRadius: 5 },
+  categoryText: { fontSize: 9, fontWeight: "bold", textAlign: "center" },
+
+  productContainer: { flex: 1, padding: 10 },
+  filterRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  filterButton: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, backgroundColor: "#ddd" },
+  filterText: { fontSize: 12, fontWeight: "bold" },
+
+  card: { width: CARD_WIDTH, margin: CARD_MARGIN / 2, backgroundColor: "#fff", borderRadius: 12, alignItems: "center", marginBottom: 15 },
+  image: { width: "100%", height: 120, borderRadius: 12 },
+  productName: { fontSize: 12, fontWeight: "bold", marginTop: 5, textAlign: "center" },
+  priceText: { fontSize: 12, fontWeight: "bold", color: "#A2730C", marginTop: 2 },
+  addButton: { backgroundColor: "#7EA172", borderRadius: 20, padding: 6, marginTop: 5 },
+
+  toggleButton: { alignItems: "center", padding: 5 },
+  
+
+});
 
 export default SearchScreen;
