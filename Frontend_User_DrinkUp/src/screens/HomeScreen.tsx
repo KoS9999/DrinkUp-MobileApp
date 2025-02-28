@@ -198,7 +198,7 @@ const HomeScreen = () => {
               <TouchableOpacity onPress={openSearchScreen} activeOpacity={1}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Tìm kiếm sản phẩm..."
+                  placeholder="Tìm kiếm và lọc sản phẩm..."
                   placeholderTextColor="#999"
                   editable={false} 
                   //onChangeText={handleSearch} // Hàm xử lý khi nhập nội dung tìm kiếm
@@ -378,9 +378,10 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
-    marginLeft: -60,
-    marginRight: -60,
-    position: 'relative'
+    alignItems:'center',
+    alignContent: 'center',
+    position: 'relative',
+    marginLeft: -50
   },
   optionsContainer: {
     flexDirection: 'row',

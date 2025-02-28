@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet, 
+  View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet,
   Alert, Image, ActivityIndicator, Dimensions, ScrollView, Animated
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -8,9 +8,9 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { API_BASE_URL } from "../config/api";
 
 const { width } = Dimensions.get("window");
-const INITIAL_CATEGORY_WIDTH = width * 0.15; 
-const COLLAPSED_CATEGORY_WIDTH = width * 0.05; 
-const CARD_WIDTH = (width - INITIAL_CATEGORY_WIDTH - 50) / 2; 
+const INITIAL_CATEGORY_WIDTH = width * 0.2;
+const COLLAPSED_CATEGORY_WIDTH = width * 0.05;
+const CARD_WIDTH = (width - INITIAL_CATEGORY_WIDTH - 50) / 2;
 const CARD_MARGIN = 10;
 
 const SearchScreen = () => {
@@ -19,10 +19,10 @@ const SearchScreen = () => {
   const [results, setResults] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [sortBy, setSortBy] = useState(""); 
-  const [orderBy, setOrderBy] = useState("asc"); 
-  const [orderByPrice, setOrderByPrice] = useState("asc"); 
-  const [orderByName, setOrderByName] = useState("asc"); 
+  const [sortBy, setSortBy] = useState("");
+  const [orderBy, setOrderBy] = useState("asc");
+  const [orderByPrice, setOrderByPrice] = useState("asc");
+  const [orderByName, setOrderByName] = useState("asc");
   const [loading, setLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const categoryWidth = new Animated.Value(INITIAL_CATEGORY_WIDTH);
@@ -58,22 +58,22 @@ const SearchScreen = () => {
     if (selectedCategory) url += `&category=${selectedCategory}`;
 
     if (sortBy) {
-        const currentOrder = sortBy === "price" ? orderByPrice : orderByName;
-        url += `&sortBy=${sortBy}&order=${currentOrder}`;
+      const currentOrder = sortBy === "price" ? orderByPrice : orderByName;
+      url += `&sortBy=${sortBy}&order=${currentOrder}`;
     }
 
     try {
-        const response = await fetch(url);
-        const data = await response.json();
-        if (response.ok) {
-            setResults(data.data.products);
-        } else {
-            setResults([]);
-        }
+      const response = await fetch(url);
+      const data = await response.json();
+      if (response.ok) {
+        setResults(data.data.products);
+      } else {
+        setResults([]);
+      }
     } catch (error) {
-        Alert.alert("Lỗi", "Lỗi khi gọi API.");
+      Alert.alert("Lỗi", "Lỗi khi gọi API.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -119,34 +119,34 @@ const SearchScreen = () => {
       {/* Thanh tìm kiếm */}
       <View style={styles.searchBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={24} color="black" />
+          <MaterialIcons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
 
         <View style={styles.searchInputContainer}>
-            <TextInput
-                style={styles.searchInput}
-                placeholder="Tìm kiếm sản phẩm..."
-                placeholderTextColor="#999"
-                value={searchText}
-                onChangeText={handleSearch}
-                autoFocus={true}
-            />
-            
-            {/* Nút X bên trong TextInput */}
-            {searchText.length > 0 && (
-                <TouchableOpacity 
-                    style={styles.clearButton} 
-                    onPress={() => {
-                        setSearchText(""); 
-                        fetchProducts();
-                    }}>
-                    <MaterialIcons name="close" size={20} color="gray" />
-                </TouchableOpacity>
-            )}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm sản phẩm..."
+            placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={handleSearch}
+            autoFocus={true}
+          />
+
+          {/* Nút X bên trong TextInput */}
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => {
+                setSearchText("");
+                fetchProducts();
+              }}>
+              <MaterialIcons name="close" size={20} color="gray" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity onPress={() => fetchProducts()}>
-            <MaterialIcons name="search" size={24} color="black" />
+          <MaterialIcons name="search" size={24} color="black" />
         </TouchableOpacity>
       </View>
 
@@ -160,12 +160,15 @@ const SearchScreen = () => {
           {!isCollapsed && (
             <ScrollView>
               {categories.map((category) => (
-                <TouchableOpacity 
-                  key={category.id} 
+                <TouchableOpacity
+                  key={category.id}
                   style={[styles.categoryItem, selectedCategory === category.name && styles.selectedCategory]}
                   onPress={() => setSelectedCategory(category.name)}
                 >
-                  <Text style={styles.categoryText}>{category.name}</Text>
+                  <Image source={{uri: category.imageUrl}} style={[styles.categoryIcon, selectedCategory !== category.name && styles.inactiveIcon]} />
+                  <Text style={[styles.categoryText, selectedCategory !== category.name && styles.inactiveText]}>
+                    {category.name}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -176,10 +179,10 @@ const SearchScreen = () => {
         <View style={styles.productContainer}>
           <View style={styles.filterRow}>
             <TouchableOpacity onPress={handleSortByPrice} style={styles.filterButton}>
-                <Text style={styles.filterText}>Giá {sortBy === "price" ? (orderByPrice === "asc" ? "↑" : "↓") : ""}</Text>
+              <Text style={styles.filterText}>Giá {sortBy === "price" ? (orderByPrice === "asc" ? "↑" : "↓") : ""}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSortByName} style={styles.filterButton}>
-                <Text style={styles.filterText}>Tên {sortBy === "name" ? (orderByName === "asc" ? "A-Z" : "Z-A") : ""}</Text>
+              <Text style={styles.filterText}>Tên {sortBy === "name" ? (orderByName === "asc" ? "A-Z" : "Z-A") : ""}</Text>
             </TouchableOpacity>
           </View>
 
@@ -188,9 +191,9 @@ const SearchScreen = () => {
           ) : (
             <FlatList
               data={results}
-              keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()} 
-              renderItem={renderItem} 
-              numColumns={2} 
+              keyExtractor={(item, index) => item.id ? item.id.toString() : index.toString()}
+              renderItem={renderItem}
+              numColumns={2}
               contentContainerStyle={{ paddingHorizontal: CARD_MARGIN }}
             />
           )}
@@ -201,16 +204,30 @@ const SearchScreen = () => {
 };
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 40 },
-  searchBar: { flexDirection: "row", alignItems: "center", marginBottom: 10,},
+  searchBar: { flexDirection: "row", alignItems: "center", marginBottom: 10, },
   searchInputContainer: { flex: 1, position: "relative", },
-  searchInput: { height: 40, borderWidth: 1, borderColor: "#ccc", borderRadius: 15, paddingHorizontal: 20, backgroundColor: "#fff",},
-  clearButton: { position: "absolute", right: 5, top: "35%", transform: [{ translateY: -10 }], padding: 5},
+  searchInput: { height: 40, borderWidth: 1, borderColor: "#ccc", borderRadius: 15, paddingHorizontal: 20, backgroundColor: "#fff", },
+  clearButton: { position: "absolute", right: 5, top: "35%", transform: [{ translateY: -10 }], padding: 5 },
 
   contentContainer: { flexDirection: "row", flex: 1 },
-  categoryContainer: { backgroundColor: "#f8f8f8", paddingVertical: 5, paddingHorizontal: 5 },
-  categoryItem: { paddingVertical: 5, paddingHorizontal: 8, alignItems: "center" },
+  categoryContainer: { backgroundColor: "#f8f8f8", paddingVertical: 5, paddingHorizontal: 5, width: 300 },
+  categoryItem: { paddingVertical: 5, paddingHorizontal: 8, alignItems: "center", marginBottom: 10 },
   selectedCategory: { backgroundColor: "#ddd", borderRadius: 5 },
-  categoryText: { fontSize: 9, fontWeight: "bold", textAlign: "center" },
+  categoryText: { fontSize: 14, fontWeight: "bold", textAlign: "center" },
+  
+  inactiveIcon: {
+    opacity: 0.3, 
+  },
+  inactiveText: {
+    color: "#bbb"
+  },
+
+  categoryIcon: {
+    width: 40, 
+    height: 40,
+    marginBottom: 5,
+  },
+
 
   productContainer: { flex: 1, padding: 10 },
   filterRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
@@ -224,7 +241,7 @@ const styles = StyleSheet.create({
   addButton: { backgroundColor: "#7EA172", borderRadius: 20, padding: 6, marginTop: 5 },
 
   toggleButton: { alignItems: "center", padding: 5 },
-  
+
 
 });
 
