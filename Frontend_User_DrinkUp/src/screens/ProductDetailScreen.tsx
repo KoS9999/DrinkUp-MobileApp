@@ -33,6 +33,7 @@ const ProductDetailScreen: React.FC = () => {
     const [quantity, setQuantity] = useState<number>(1);
 
     const [selectedSize, setSelectedSize] = useState("S");
+    const [selectedTopping, setSelectedTopping] = useState<number | null>(null);
 
 
 
@@ -82,8 +83,13 @@ const ProductDetailScreen: React.FC = () => {
                     <Text style={styles.sectionTitle}>Size</Text>
                     {["S", "M", "L"].map((size) => (
                         <TouchableOpacity key={size} style={styles.optionRow} onPress={() => setSelectedSize(size)}>
-                           <AntDesign name="checkcircle" size={20} color={selectedSize === size ? "#0A1858" : "#737373"} />
-                            <Text style={{ marginLeft: 10, color: selectedSize === size ? "#0A1858" : "#737373", fontWeight: selectedSize === size ? "bold" : "normal"}}>{size} - {product.price[size]} đ</Text>
+                            <AntDesign name="checkcircle" size={20} color={selectedSize === size ? "#0A1858" : "#737373"} />
+                            <Text style={{ marginLeft: 10, color: selectedSize === size ? "#0A1858" : "#737373", fontWeight: selectedSize === size ? "bold" : "normal" }}>
+                                {size}
+                            </Text>
+                            <Text style={{ color: selectedSize === size ? "#0A1858" : "#737373", fontWeight: selectedSize === size ? "bold" : "normal", marginLeft: "auto" }}>
+                                {product.price[size]} đ
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -101,9 +107,13 @@ const ProductDetailScreen: React.FC = () => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Thêm topping</Text>
                     {product.toppings.map((topping, index) => (
-                        <TouchableOpacity key={index} style={styles.toppingRow}>
-                            <Text>{topping.name}</Text>
-                            <Text>{topping.price} đ</Text>
+                        <TouchableOpacity key={index} style={styles.toppingRow} onPress={() => setSelectedTopping(index)}>
+                            <View style={styles.plusIcon}>
+                                {/* Line 113 needs adjusting */}
+                                <AntDesign name={selectedTopping ? "minus" : "plus"}  size={14} color="#0A1858" /> 
+                            </View>
+                            <Text style={{ marginLeft: 10, color: selectedTopping === index ? "#0A1858" : "#737373", fontWeight: selectedTopping === index ? "bold" : "normal" }}>{topping.name}</Text>
+                            <Text style={{ color: selectedTopping === index ? "#0A1858" : "#737373", fontWeight: selectedTopping === index ? "bold" : "normal", marginLeft: "auto" }}>{topping.price} đ</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -198,12 +208,25 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         marginVertical: 5,
-        color: "#737373"
+        color: "#737373",
+        marginLeft: 10
     },
     toppingRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
+        alignItems: "center",
         marginVertical: 5,
+        color: "#737373",
+        marginLeft: 10
+    },
+    plusIcon: {
+        width: 24,
+        height: 24,
+        borderRadius: 12, // Làm viền tròn
+        borderWidth: 1,
+        borderColor: "#0A1858",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 10,
     },
     quantityContainer: {
         backgroundColor: "#CCC",
