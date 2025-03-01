@@ -33,9 +33,26 @@ const ProductDetailScreen: React.FC = () => {
     const [quantity, setQuantity] = useState<number>(1);
 
     const [selectedSize, setSelectedSize] = useState("S");
-    const [selectedTopping, setSelectedTopping] = useState<number | null>(null);
+    const [selectedTopping, setSelectedTopping] = useState<{ [key: number]: number }>({});
 
+    const handleToppingPress = (index: number) => {
+        setSelectedTopping((prev) => {
+            const newCount = (prev[index] || 0) + 1;
+            return { ...prev, [index]: newCount };
+        });
+    };
 
+    const handleToppingRemove = (index: number) => {
+        setSelectedTopping((prev) => {
+            if (!prev[index] || prev[index] === 1) {
+                const newToppings = { ...prev };
+                delete newToppings[index];
+                return newToppings;
+            } else {
+                return { ...prev, [index]: prev[index] - 1 };
+            }
+        })
+    }
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/product/get-product/${productId}`)
@@ -61,8 +78,9 @@ const ProductDetailScreen: React.FC = () => {
     }
 
     return (
-        <ScrollView>
-            <View style={styles.container}>
+
+        <View style={styles.container}>
+            <ScrollView>
                 <View style={styles.sectionHead}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.header}>
                         <AntDesign name="arrowleft" size={24} color="black" />
@@ -106,36 +124,70 @@ const ProductDetailScreen: React.FC = () => {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Thêm topping</Text>
-                    {product.toppings.map((topping, index) => (
-                        <TouchableOpacity key={index} style={styles.toppingRow} onPress={() => setSelectedTopping(index)}>
-                            <View style={styles.plusIcon}>
-                                {/* Line 113 needs adjusting */}
-                                <AntDesign name={selectedTopping ? "minus" : "plus"}  size={14} color="#0A1858" /> 
-                            </View>
-                            <Text style={{ marginLeft: 10, color: selectedTopping === index ? "#0A1858" : "#737373", fontWeight: selectedTopping === index ? "bold" : "normal" }}>{topping.name}</Text>
-                            <Text style={{ color: selectedTopping === index ? "#0A1858" : "#737373", fontWeight: selectedTopping === index ? "bold" : "normal", marginLeft: "auto" }}>{topping.price} đ</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                    {product.toppings.map((topping, index) => {
+                        const quantity = selectedTopping[index] || 0;
 
-                <View style={styles.quantityContainer}>
-                    <Text>Số lượng</Text>
-                    <View style={styles.quantityControl}>
-                        <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                            <AntDesign name="minuscircleo" size={24} color="black" />
-                        </TouchableOpacity>
-                        <Text style={styles.quantityText}>{quantity}</Text>
-                        <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                            <AntDesign name="pluscircleo" size={24} color="black" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                        return (
+                            <TouchableOpacity key={index} style={styles.toppingRow}>
+                                <View style={styles.iconContainer}>
+                                    {quantity > 0 ? (
+                                        <>
+                                            <TouchableOpacity onPress={() => handleToppingRemove(index)}>
+                                                <AntDesign name="minus" size={18} color="#0A1858" />
+                                            </TouchableOpacity>
+                                            <Text style={styles.quantityText}>{quantity}</Text>
+                                        </>
+                                    ) : null}
+                                    <TouchableOpacity onPress={() => handleToppingPress(index)}>
+                                        <AntDesign name="plus" size={18} color="#0A1858" />
+                                    </TouchableOpacity>
+                                </View>
 
+                                <Text style={{
+                                    marginLeft: 10,
+                                    color: quantity > 0 ? "#0A1858" : "#737373",
+                                    fontWeight: quantity > 0 ? "bold" : "normal"
+                                }}>
+                                    {topping.name}
+                                </Text>
+
+                                <Text style={{
+                                    marginLeft: "auto",
+                                    color: quantity > 0 ? "#0A1858" : "#737373",
+                                    fontWeight: quantity > 0 ? "bold" : "normal"
+                                }}>
+                                    {topping.price} đ
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+
+                </View>
+            </ScrollView>
+
+            <View style={styles.quantityContainer}>
+                <View style = {{flexDirection: "column"}}>
+                    <Text style = {{marginBottom: 10}}>Số lượng</Text>
+                    <Text>Thành tiền</Text>
+                </View>
+                <View style={styles.quantityControl}>
+                    <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                        <AntDesign name="minuscircleo" size={24} color="black" />
+                    </TouchableOpacity>
+                    <Text style={styles.quantityText}>{quantity}</Text>
+                    <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                        <AntDesign name="pluscircleo" size={24} color="black" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            <View style={styles.quantityContainer}>
                 <TouchableOpacity style={styles.addToCartButton}>
                     <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
                 </TouchableOpacity>
             </View>
-        </ScrollView>
+        </View>
+
     );
 };
 
@@ -199,6 +251,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFF",
         padding: 10,
         marginBottom: 10,
+        height: "auto"
     },
     sectionTitle: {
         fontWeight: "bold",
@@ -216,7 +269,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginVertical: 5,
         color: "#737373",
-        marginLeft: 10
+        marginLeft: 10,
     },
     plusIcon: {
         width: 24,
@@ -228,8 +281,17 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginRight: 10,
     },
+    iconContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        backgroundColor: "#F5F5F5"
+    },
     quantityContainer: {
-        backgroundColor: "#CCC",
+        backgroundColor: "white",
         padding: 10,
         flexDirection: "row",
         justifyContent: "space-between",
@@ -247,6 +309,9 @@ const styles = StyleSheet.create({
         padding: 15,
         alignItems: "center",
         marginTop: 10,
+        borderRadius: 20,
+        width: 320,
+        alignSelf: "center"
     },
     addToCartText: {
         color: "#FFF",
