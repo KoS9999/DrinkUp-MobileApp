@@ -11,7 +11,7 @@ const { width } = Dimensions.get("window");
 const INITIAL_CATEGORY_WIDTH = width * 0.2;
 const COLLAPSED_CATEGORY_WIDTH = width * 0.05;
 const CARD_WIDTH = (width - INITIAL_CATEGORY_WIDTH - 50) / 2;
-const CARD_MARGIN = 10;
+const CARD_MARGIN = 10;//
 
 const SearchScreen = () => {
   const navigation = useNavigation();
