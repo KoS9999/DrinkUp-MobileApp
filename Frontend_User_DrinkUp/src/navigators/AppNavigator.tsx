@@ -21,9 +21,8 @@ import SearchScreen from "../screens/SearchScreen";
 import ProductDetailScreen from "../screens/ProductDetailScreen";
 
 import FooterNavigation from "../components/FooterNavigation";
-import { Product
-  
- } from "../models/Product";
+import { Product } from "../models/Product";
+
 export type RootStackParamList = {
   SplashScreen: undefined;
   OnBoardingScreen: undefined;
@@ -59,7 +58,7 @@ const HomeTabs = () => {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} />
-      <Tab.Screen name="OrderTab" component={OrderScreen} />
+      <Tab.Screen name="OrderTab" component={SearchScreen} />
       <Tab.Screen name="CartTab" component={CartScreen} />
       <Tab.Screen name="StoreTab" component={StoreScreen} />
       <Tab.Screen name="AccountTab" component={AccountStack} />

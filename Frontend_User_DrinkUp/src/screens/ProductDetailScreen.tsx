@@ -34,6 +34,19 @@ const ProductDetailScreen: React.FC = () => {
 
     const [selectedSize, setSelectedSize] = useState("S");
     const [selectedTopping, setSelectedTopping] = useState<{ [key: number]: number }>({});
+    const [totalPrice, setTotalPrice] = useState<number>(0);
+
+    //Tính tổng giá tiền
+    useEffect(() =>{
+        if(!product) return;
+
+        const sizePrice = product.price[selectedSize] || 0;
+        const toppingPrice = Object.entries(selectedTopping).reduce((sum, [index, count]) => {
+            return sum + (product.toppings[parseInt(index)].price * count);
+        }, 0);
+
+        setTotalPrice((sizePrice + toppingPrice) * quantity);
+    }, [selectedSize, selectedTopping, quantity, product]);
 
     const handleToppingPress = (index: number) => {
         setSelectedTopping((prev) => {
@@ -166,10 +179,11 @@ const ProductDetailScreen: React.FC = () => {
             </ScrollView>
 
             <View style={styles.quantityContainer}>
-                <View style = {{flexDirection: "column"}}>
+                <Text>Số lượng</Text>
+                {/* <View style = {{flexDirection: "column"}}>
                     <Text style = {{marginBottom: 10}}>Số lượng</Text>
                     <Text>Thành tiền</Text>
-                </View>
+                </View> */}
                 <View style={styles.quantityControl}>
                     <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
                         <AntDesign name="minuscircleo" size={24} color="black" />
@@ -183,7 +197,7 @@ const ProductDetailScreen: React.FC = () => {
 
             <View style={styles.quantityContainer}>
                 <TouchableOpacity style={styles.addToCartButton}>
-                    <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
+                    <Text style={styles.addToCartText}>Thêm vào giỏ hàng ({totalPrice} đ)</Text>
                 </TouchableOpacity>
             </View>
         </View>
