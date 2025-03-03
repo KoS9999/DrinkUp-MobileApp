@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet,
   Alert, Image, ActivityIndicator, Dimensions, ScrollView, Animated
@@ -6,6 +6,8 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { API_BASE_URL } from "../config/api";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigators/AppNavigator";
 
 const { width } = Dimensions.get("window");
 const INITIAL_CATEGORY_WIDTH = width * 0.2;
@@ -13,8 +15,14 @@ const COLLAPSED_CATEGORY_WIDTH = width * 0.05;
 const CARD_WIDTH = (width - INITIAL_CATEGORY_WIDTH - 50) / 2;
 const CARD_MARGIN = 10;//
 
+type Cart = {
+  id: string
+}
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'SearchScreen'>;
+
 const SearchScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -26,6 +34,7 @@ const SearchScreen = () => {
   const [loading, setLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const categoryWidth = new Animated.Value(INITIAL_CATEGORY_WIDTH);
+  const [cart, setCart] = useState([]);
 
   useEffect(() => {
     fetchCategories();
@@ -114,6 +123,10 @@ const SearchScreen = () => {
     </View>
   );
 
+
+  // const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  // const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
   return (
     <View style={styles.container}>
       {/* Thanh tìm kiếm */}
@@ -165,7 +178,7 @@ const SearchScreen = () => {
                   style={[styles.categoryItem, selectedCategory === category.name && styles.selectedCategory]}
                   onPress={() => setSelectedCategory(category.name)}
                 >
-                  <Image source={{uri: category.imageUrl}} style={[styles.categoryIcon, selectedCategory !== category.name && styles.inactiveIcon]} />
+                  <Image source={{ uri: category.imageUrl }} style={[styles.categoryIcon, selectedCategory !== category.name && styles.inactiveIcon]} />
                   <Text style={[styles.categoryText, selectedCategory !== category.name && styles.inactiveText]}>
                     {category.name}
                   </Text>
@@ -199,6 +212,21 @@ const SearchScreen = () => {
           )}
         </View>
       </View>
+
+      <View style={styles.cartButtonContainer}>
+        <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate("CartScreen")}>
+          <View style={{ position: 'relative' }}>
+            <MaterialIcons name="shopping-cart" size={32} color="white" />
+
+            {/* Badge hiển thị số lượng sản phẩm */}
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>3</Text>
+            </View>
+          </View>
+          <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>200,000đ</Text>
+        </TouchableOpacity>
+      </View>
+
     </View>
   );
 };
@@ -214,16 +242,16 @@ const styles = StyleSheet.create({
   categoryItem: { paddingVertical: 5, paddingHorizontal: 8, alignItems: "center", marginBottom: 10 },
   selectedCategory: { backgroundColor: "#ddd", borderRadius: 5 },
   categoryText: { fontSize: 14, fontWeight: "bold", textAlign: "center" },
-  
+
   inactiveIcon: {
-    opacity: 0.3, 
+    opacity: 0.3,
   },
   inactiveText: {
     color: "#bbb"
   },
 
   categoryIcon: {
-    width: 40, 
+    width: 40,
     height: 40,
     marginBottom: 5,
   },
@@ -242,7 +270,50 @@ const styles = StyleSheet.create({
 
   toggleButton: { alignItems: "center", padding: 5 },
 
-
+  cartButtonContainer: {
+    position: "absolute",
+    right: 10,
+    bottom: 100,
+    zIndex: 10,
+  },
+  cartButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2D537E",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    borderRadius: 30,
+    alignContent: "center",
+    alignSelf: "center"
+  },
+  cartText: {
+    color: "white",
+    marginLeft: 5,
+    fontWeight: "bold",
+  },
+  cartPrice: {
+    color: "white",
+    marginLeft: 10,
+    fontWeight: "bold",
+  },
+  badge: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    backgroundColor: '#b08d64',  // Màu giống trong hình
+    borderRadius: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    minWidth: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
 });
 
 export default SearchScreen;

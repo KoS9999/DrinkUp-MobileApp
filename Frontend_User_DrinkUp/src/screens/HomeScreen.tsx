@@ -191,7 +191,7 @@ const HomeScreen = () => {
                       <Text style={styles.authButtonText}>ĐĂNG NHẬP/ ĐĂNG KÝ</Text>
                     </TouchableOpacity>   
                 )}
-                <MaterialIcons name="notifications-on" size={24} color="#6E3816" style={{marginLeft: 0}} />
+                <MaterialIcons name="notifications-on" size={24} color="#6E3816" style={{position: "absolute", right: -80}} />
               </View> 
 
               <View>
@@ -378,10 +378,9 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     backgroundColor: '#f9f9f9',
-    alignItems:'center',
-    alignContent: 'center',
-    position: 'relative',
-    marginLeft: -50
+    marginLeft: "auto",
+    marginRight: "auto",
+    flex: 1
   },
   optionsContainer: {
     flexDirection: 'row',

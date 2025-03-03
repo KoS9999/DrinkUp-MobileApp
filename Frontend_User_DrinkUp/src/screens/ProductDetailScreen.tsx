@@ -179,7 +179,10 @@ const ProductDetailScreen: React.FC = () => {
             </ScrollView>
 
             <View style={styles.quantityContainer}>
-                <Text>Số lượng</Text>
+                <View style = {{flexDirection: "column"}}>
+                    <Text style = {{color: '#0A1858'}}> {quantity} sản phẩm</Text>
+                    <Text style = {{paddingLeft: 5, marginTop: 5, color: '#0A1858', fontSize: 20, fontWeight: "600"}}>{totalPrice.toLocaleString('vi-VN')} đ</Text>
+                </View>
                 {/* <View style = {{flexDirection: "column"}}>
                     <Text style = {{marginBottom: 10}}>Số lượng</Text>
                     <Text>Thành tiền</Text>
@@ -197,7 +200,7 @@ const ProductDetailScreen: React.FC = () => {
 
             <View style={styles.quantityContainer}>
                 <TouchableOpacity style={styles.addToCartButton}>
-                    <Text style={styles.addToCartText}>Thêm vào giỏ hàng ({totalPrice} đ)</Text>
+                    <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -319,13 +322,16 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
     },
     addToCartButton: {
-        backgroundColor: "#6A9",
+        backgroundColor: "#7EA172",
         padding: 15,
         alignItems: "center",
         marginTop: 10,
-        borderRadius: 20,
+        borderRadius: 10,
         width: 320,
-        alignSelf: "center"
+        alignSelf: "center",
+        alignContent: "center",
+        marginLeft: "auto",
+        marginRight: "auto"
     },
     addToCartText: {
         color: "#FFF",
