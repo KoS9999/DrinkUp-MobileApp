@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const OTP = require('../models/OTP');
+const Order = require('../models/Order');
+const OrderDetail = require('../models/OrderDetail');
 const OTPService = require('../services/emailService');
 const { uploadImageToFirebase } = require('../services/firebaseService');
 const bcrypt = require('bcrypt');
@@ -133,6 +135,126 @@ exports.updateProfileImage = async (req, res) => {
     await user.save();
 
     res.status(200).json({ message: 'Cập nhật ảnh người dùng thành công', imageUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+exports.getOrderHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const orders = await Order.find({ user: userId })
+      .populate({
+        path: 'user',
+        select: 'name email phone'
+      })
+      .populate({
+        path: 'branchId',
+        select: 'name address'
+      });
+
+    if (!orders.length) {
+      return res.status(404).json({ message: 'Bạn chưa có đơn hàng nào' });
+    }
+
+    res.status(200).json({ message: 'Lịch sử mua hàng', orders });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+exports.getOrderDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+
+    const order = await Order.findOne({ _id: orderId, user: userId })
+      .populate({
+        path: 'user',
+        select: 'name email phone'
+      })
+      .populate({
+        path: 'branchId',
+        select: 'name address'
+      });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    const orderDetails = await OrderDetail.find({ orderId })
+      .populate('product')
+      .populate('toppings');
+
+    res.status(200).json({ message: 'Chi tiết đơn hàng', order, orderDetails });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+// Hủy đơn hàng (chỉ được phép trước 30 phút sau khi đặt)
+exports.cancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+
+    const order = await Order.findOne({ _id: orderId, user: userId });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    const orderTime = new Date(order.createdAt);
+    const currentTime = new Date();
+    const timeDifference = (currentTime - orderTime) / (1000 * 60);
+
+    if (order.orderStatus === 'processing') {
+      return res.status(400).json({
+        message: 'Đơn hàng đang được chuẩn bị, bạn chỉ có thể gửi yêu cầu hủy đơn.'
+      });
+    }
+
+    // Nếu thời gian đặt hàng dưới 30 phút và đơn chưa chuyển sang chuẩn bị hàng thì hủy đơn ngay
+    if (timeDifference <= 30 && order.orderStatus === 'new') {
+      order.orderStatus = 'canceled';
+      await order.save();
+      return res.status(200).json({ message: 'Đơn hàng đã được hủy thành công', order });
+    }
+
+    return res.status(400).json({
+      message: 'Bạn chỉ có thể hủy đơn trong vòng 30 phút sau khi đặt. Nếu đơn đã vào trạng thái "processing", hãy gửi yêu cầu hủy đơn.'
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+};
+
+// Gửi yêu cầu hủy đơn hàng nếu đơn đã vào trạng thái chuẩn bị hàng
+exports.requestCancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user.id;
+
+    const order = await Order.findOne({ _id: orderId, user: userId });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+    }
+
+    if (order.orderStatus !== 'processing') {
+      return res.status(400).json({
+        message: 'Bạn chỉ có thể gửi yêu cầu hủy khi đơn hàng đang ở trạng thái chuẩn bị hàng.'
+      });
+    }
+
+    // Chuyển trạng thái sang "Yêu cầu hủy đơn"
+    order.orderStatus = 'cancel_request';
+    await order.save();
+
+    res.status(200).json({
+      message: 'Yêu cầu hủy đơn đã được gửi đến cửa hàng. Hãy chờ xác nhận!',
+      order
+    });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
