@@ -113,14 +113,16 @@ const SearchScreen = () => {
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("ProductDetailScreen", { productId: item._id })}>
+
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
       <Text style={styles.productName}>{item.name}</Text>
       <Text style={styles.priceText}>Size S: {item.price.S}đ</Text>
       <TouchableOpacity style={styles.addButton}>
         <MaterialIcons name="add" size={24} color="#fff" />
       </TouchableOpacity>
-    </View>
+
+    </TouchableOpacity>
   );
 
 
