@@ -72,6 +72,7 @@ const ProductDetailScreen: React.FC = () => {
             .then((res) => res.json())
             .then((data) => {
                 console.log("Fetched data:", data);
+                console.log("ID san pham: ", data.product._id);
 
                 if (data?.success) {
                     setProduct(data.product);

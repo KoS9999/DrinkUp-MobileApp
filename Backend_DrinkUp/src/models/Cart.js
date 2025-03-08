@@ -8,7 +8,17 @@ const CartSchema = new mongoose.Schema({
       quantity: { type: Number, required: true, min: 1 },
       size: { type: String, enum: ['S', 'M', 'L'], required: true },
       toppings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Topping' }],
-      price: { type: Number, required: true }
+      price: { type: Number, required: true },
+      iceLevel: { 
+        type: String,
+        enum: ['Không đá', 'Ít đá', 'Đá bình thường', 'Đá riêng'],
+        default: 'Đá bình thường'
+      },
+      sweetLevel: { 
+        type: String,
+        enum: ['Không ngọt', 'Ít ngọt', 'Ngọt bình thường', 'Nhiều ngọt'],
+        default: 'Vừa'
+      }
     }
   ],
   updatedAt: { type: Date, default: Date.now }

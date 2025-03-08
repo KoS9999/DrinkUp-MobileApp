@@ -91,7 +91,7 @@ const HomeScreen = () => {
             const prices = details.price || {}; 
 
             return {
-              id: item._id,  
+              _id: item._id,  
               name: details.name || "Không có tên",
               imageUrl: details.imageUrl || "https://example.com/default.jpg", 
               size: Object.keys(prices).length > 0 ? Object.keys(prices) : ['S', 'M', 'L'], 
