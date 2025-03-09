@@ -3,10 +3,33 @@ const Product = require('../models/Product');
 
 exports.getCart = async (req, res) => {
   try {
-    const cart = await Cart.findOne({ userId: req.params.userId }).populate('items.productId items.toppings');
-    res.json(cart || { userId: req.params.userId, items: [] });
+    console.log('Đã vào getCart controller');
+    // Kiểm tra nếu không có userId trong params
+    const userId = req.params.userId || req.userId;  // Dùng req.userId nếu có middleware authenticate
+    if (!userId) {
+      console.log('Không tìm thấy userId');
+      return res.status(400).json({ error: 'Không tìm thấy userId' });
+    }
+
+    console.log('userId:', userId);  
+
+    const cart = await Cart.findOne({ userId })
+      .populate({
+        path: 'items.productId',
+        select: 'name price imageUrl'
+      });
+
+    if (!cart) {
+      console.log('Không tìm thấy giỏ hàng');
+      return res.status(404).json({ error: 'Không tìm thấy giỏ hàng' });
+    }
+
+    console.log('Cart data:', cart);  
+
+    res.status(200).json(cart);
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi khi lấy giỏ hàng' });
+    console.error('Lỗi khi lấy giỏ hàng:', error);  
+    res.status(500).json({ error: 'Lỗi khi lấy giỏ hàng', details: error.message });
   }
 };
 
