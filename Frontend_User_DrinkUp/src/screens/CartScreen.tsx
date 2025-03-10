@@ -1,73 +1,157 @@
-import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { API_BASE_URL } from "../config/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 type Product = {
-  id: number;
-  name: string;
-  size: string;
-  description: string;
-  price: number;
+  _id: string;
+  productId: {
+    name: string;
+    price: { S: number; M: number; L: number };
+    imageUrl: string;
+  };
   quantity: number;
-  image: string;
+  size: "S" | "M" | "L";
+  toppings: {
+    _id: string;
+    toppingId: {
+      name: string;
+      price: number;
+    };
+    quantity: number;
+  }[];
+  iceLevel: string;
+  sweetLevel: string;
 };
 
-type CartScreenProps = {
-  navigation: any;
+type CartData = {
+  _id: string;
+  userId: string;
+  items: Product[];
+  updatedAt: string;
 };
 
-const products: Product[] = [
-  {
-    id: 1,
-    name: "TRÀ ĐÀO HỒNG ĐÀI",
-    size: "Size L",
-    description: "Đá bình thường, Ngọt bình thường",
-    price: 64000,
-    quantity: 1,
-    image: "https://cdn.shopify.com/s/files/1/0537/9997/files/tra_dao_bao_nhieu_calo_cach_uong_tra_dao_khong_bi_tang_can_1_480x480.jpg?v=1695697682"
-  },
-  {
-    id: 2,
-    name: "TRÀ VẢI",
-    size: "Size L",
-    description: "Ngọt bình thường, Đá bình thường",
-    price: 54000,
-    quantity: 1,
-    image: "https://micaynagathuduc.com/wp-content/uploads/2022/07/sinh-to-vai-osterberg.jpg"
-  },
-  {
-    id: 3,
-    name: "TRÀ CÓC",
-    size: "Size L",
-    description: "Ngọt bình thường, Ít đá",
-    price: 69000,
-    quantity: 1,
-    image: "https://katinat.vn/wp-content/uploads/2024/04/432783099_402994675762732_8827534077984566267_n.jpg"
+
+const getAuthToken = async () => {
+  const token = await AsyncStorage.getItem("userToken");
+  if (!token) {
+    console.error("Missing token");
   }
-];
+  console.log("Token:", token);
+  return token;
+};
 
-const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
-  const totalAmount = products.reduce((total, product) => total + product.price * product.quantity, 0);
+// const products: Product[] = [
+//   {
+//     id: 1,
+//     name: "TRÀ ĐÀO HỒNG ĐÀI",
+//     size: "Size L",
+//     description: "Đá bình thường, Ngọt bình thường",
+//     price: 64000,
+//     quantity: 1,
+//     image: "https://cdn.shopify.com/s/files/1/0537/9997/files/tra_dao_bao_nhieu_calo_cach_uong_tra_dao_khong_bi_tang_can_1_480x480.jpg?v=1695697682"
+//   },
+//   {
+//     id: 2,
+//     name: "TRÀ VẢI",
+//     size: "Size L",
+//     description: "Ngọt bình thường, Đá bình thường",
+//     price: 54000,
+//     quantity: 1,
+//     image: "https://micaynagathuduc.com/wp-content/uploads/2022/07/sinh-to-vai-osterberg.jpg"
+//   },
+//   {
+//     id: 3,
+//     name: "TRÀ CÓC",
+//     size: "Size L",
+//     description: "Ngọt bình thường, Ít đá",
+//     price: 69000,
+//     quantity: 1,
+//     image: "https://katinat.vn/wp-content/uploads/2024/04/432783099_402994675762732_8827534077984566267_n.jpg"
+//   }
+// ];
+
+const CartScreen: React.FC = () => {
+  const [cart, setCart] = useState<CartData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [quantity, setQuantity] = useState<number>(1);
+
+  useEffect(() => {
+    const fetchCart = async () =>{
+      try {
+        const token = await getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/cart`, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        // const text = await response.text();
+        // console.log("Response Text:", text);
+        const data = await response.json();
+        if (response.ok) {
+          setCart(data);
+          setLoading(false);
+        } else {
+          console.error("Failed to fetch cart:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching cart:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCart();
+  }, []);
+
+  const calculateTotalAmount = () => {
+    if (!cart) return 0;
+    return cart.items.reduce((total, item) => {
+      const productPrice = item.productId.price[item.size] * item.quantity;
+      const toppingPrice = item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0);
+      return total + productPrice + toppingPrice;
+    }, 0);
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text>Đang tải...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Giỏ hàng</Text>
       <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>Bạn có {products.length} sản phẩm trong giỏ hàng</Text>
+        <Text style={styles.infoText}>Bạn có {cart?.items.length || 0} sản phẩm trong giỏ hàng</Text>
       </View>
-      {products.map((product) => (
-        <View key={product.id} style={styles.productContainer}>
-          <Image source={{ uri: product.image }} style={styles.productImage} />
+
+      {cart?.items.map((item) => (
+        <View key={item._id} style={styles.productContainer}>
+          <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
           <View style={styles.productDetails}>
-            <Text style={styles.productName}>{product.name}</Text>
-            <Text style={styles.productSize}>{product.size}</Text>
-            <Text style={styles.productDescription}>{product.description}</Text>
+            <Text style={styles.productName}>{item.productId.name}</Text>
+            <Text style={styles.productSize}>{item.size}</Text>
+            <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
+
+            {item.toppings.map((topping) => (
+              <View key={topping._id} style={styles.toppingContainer}>
+                <Text style={styles.toppingText}>
+                  + {topping.toppingId.name} x{topping.quantity} ({topping.toppingId.price.toLocaleString("vi-VN")}đ)
+                </Text>
+              </View>
+            ))}
 
             <View style={{ flex: 1 }} />
             <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
-              <Text style={styles.productPrice}>{product.price.toLocaleString("vi-VN")}đ</Text>
+              <Text style={styles.productPrice}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
               <View style={styles.quantityControl}>
                 <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
                   <AntDesign name="minuscircleo" size={24} color="black" />
@@ -84,8 +168,8 @@ const CartScreen: React.FC<CartScreenProps> = ({ navigation }) => {
       ))
       }
       <View style={styles.totalContainer}>
-        <Text style={styles.totalText}>{products.length} sản phẩm</Text>
-        <Text style={styles.totalAmount}>{totalAmount.toLocaleString("vi-VN")}đ</Text>
+        <Text style={styles.totalText}>{cart?.items.length} sản phẩm</Text>
+        <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
       </View>
       <TouchableOpacity style={styles.continueButton}>
         <Text style={styles.continueText}>Tiếp tục</Text>
@@ -182,6 +266,23 @@ const styles = StyleSheet.create({
   continueText: {
     color: "#fff",
     fontWeight: "bold"
+  },
+  loadingContainer: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center" 
+  },
+  toppingContainer: {
+    marginLeft: 10,         
+    paddingVertical: 2,     
+    paddingHorizontal: 5,   
+    backgroundColor: "#f9f9f9",  
+    borderRadius: 5,        
+    marginBottom: 3,        
+  },
+  toppingText: {
+    fontSize: 14,         
+    color: "#555",      
   }
 });
 
