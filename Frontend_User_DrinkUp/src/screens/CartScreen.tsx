@@ -138,7 +138,7 @@ const CartScreen: React.FC = () => {
           <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
           <View style={styles.productDetails}>
             <Text style={styles.productName}>{item.productId.name}</Text>
-            <Text style={styles.productSize}>{item.size}</Text>
+            <Text style={styles.productSize}>Size {item.size}</Text>
             <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
 
             {item.toppings.map((topping) => (
@@ -151,7 +151,9 @@ const CartScreen: React.FC = () => {
 
             <View style={{ flex: 1 }} />
             <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
-              <Text style={styles.productPrice}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
+            <Text style={styles.productPrice}>
+              {(item.productId.price[item.size] * item.quantity + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)).toLocaleString("vi-VN")}đ
+            </Text>
               <View style={styles.quantityControl}>
                 <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
                   <AntDesign name="minuscircleo" size={24} color="black" />
@@ -181,7 +183,7 @@ const CartScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff"
+    backgroundColor: "#F5F5F5",
   },
   header: {
     fontSize: 18,
@@ -203,15 +205,23 @@ const styles = StyleSheet.create({
   },
   productContainer: {
     flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
     padding: 10,
-    marginHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd"
+    marginHorizontal: 5
   },
   productImage: {
-    width: 110,
-    height: 110,
-    borderRadius: 10
+    width: 120,
+    height: 120,
+    borderRadius: 10,
+    resizeMode: "contain",
+    alignSelf: "center"
   },
   productDetails: {
     marginLeft: 10,

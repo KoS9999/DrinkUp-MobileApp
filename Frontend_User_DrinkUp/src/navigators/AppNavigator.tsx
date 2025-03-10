@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
+import {CartProvider} from '../components/CartContext';
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
@@ -100,51 +101,53 @@ const UpdateProfileStack = () => {
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="SplashScreen">
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="SplashScreen"
-          component={SplashScreen}
-        />
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="OnBoardingScreen"
-          component={OnBoardingScreen}
-        />
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="HomeScreen"
-          component={HomeTabs}
-        />
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="Login"
-          component={LoginScreen}
-        />
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="Register"
-          component={RegisterScreen}
-        />
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="SearchScreen"
-          component={SearchScreen}
-        />
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="ProductDetailScreen"
-          component={ProductDetailScreen}
-        />
-        <Stack.Screen
-          options={{ headerShown: false }}
-          name="CartScreen"
-          component={CartScreen}
-        />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="PolicyScreen" component={PolicyScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <CartProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="SplashScreen">
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="SplashScreen"
+            component={SplashScreen}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="OnBoardingScreen"
+            component={OnBoardingScreen}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="HomeScreen"
+            component={HomeTabs}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="Login"
+            component={LoginScreen}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="Register"
+            component={RegisterScreen}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="SearchScreen"
+            component={SearchScreen}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="ProductDetailScreen"
+            component={ProductDetailScreen}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="CartScreen"
+            component={CartScreen}
+          />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="PolicyScreen" component={PolicyScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </CartProvider>
   );
 }

@@ -8,6 +8,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { API_BASE_URL } from "../config/api";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigators/AppNavigator";
+import { useCart } from "../components/CartContext";
 
 const { width } = Dimensions.get("window");
 const INITIAL_CATEGORY_WIDTH = width * 0.2;
@@ -35,6 +36,7 @@ const SearchScreen = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const categoryWidth = new Animated.Value(INITIAL_CATEGORY_WIDTH);
   const [cart, setCart] = useState([]);
+  const { totalQuantity, totalAmount } = useCart();
 
   useEffect(() => {
     fetchCategories();
@@ -216,18 +218,25 @@ const SearchScreen = () => {
       </View>
 
       <View style={styles.cartButtonContainer}>
-        <TouchableOpacity style={styles.cartButton} onPress={() => navigation.navigate("CartScreen")}>
-          <View style={{ position: 'relative' }}>
-            <MaterialIcons name="shopping-cart" size={32} color="white" />
+      <TouchableOpacity
+        style={styles.cartButton}
+        onPress={() => navigation.navigate('CartScreen')}
+      >
+        <View style={{ position: 'relative' }}>
+          <MaterialIcons name="shopping-cart" size={32} color="white" />
 
-            {/* Badge hiển thị số lượng sản phẩm */}
+          {/* Badge hiển thị số lượng sản phẩm */}
+          {totalQuantity > 0 && (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>3</Text>
+              <Text style={styles.badgeText}>{totalQuantity}</Text>
             </View>
-          </View>
-          <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>200,000đ</Text>
-        </TouchableOpacity>
-      </View>
+          )}
+        </View>
+        <Text style={{ color: 'white', fontSize: 16, fontWeight: '500' }}>
+          {totalAmount.toLocaleString()} đ
+        </Text>
+      </TouchableOpacity>
+    </View>
 
     </View>
   );

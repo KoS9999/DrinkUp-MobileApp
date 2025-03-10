@@ -26,6 +26,8 @@ interface ProductCardProps {
 
 const HorizontalProductCard: React.FC<ProductCardProps> = ({ product }) => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const [isExpanded, setIsExpanded] = useState(false);
+    const maxLength = 50;
 
     return (
         <TouchableOpacity
@@ -41,7 +43,12 @@ const HorizontalProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </View>
             <View style={styles.productInfo}>
                 <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productDesc}>{product.description}</Text>
+
+                <Text style={styles.productDesc}>
+                    {isExpanded || (product.description?.length ?? 0) <= maxLength
+                        ? product.description
+                        : `${product.description?.slice(0, maxLength) ?? ''}... `}
+                </Text>
 
                 <View>
                     <Text style={styles.productPrice}>Size S: {product.price.S} đ</Text>

@@ -5,7 +5,6 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFonts } from 'expo-font';
 import { API_BASE_URL } from "../config/api";
 
-
 interface Topping {
     name: string;
     price: number;
@@ -33,8 +32,16 @@ const ProductDetailScreen: React.FC = () => {
     const [quantity, setQuantity] = useState<number>(1);
 
     const [selectedSize, setSelectedSize] = useState("S");
+    const [selectedSweet, setSelectedSweet] = useState<string>('Ngọt bình thường');
+    const [selectedIce, setSelectedIce] = useState<string>('Đá bình thường');
+
     const [selectedTopping, setSelectedTopping] = useState<{ [key: number]: number }>({});
     const [totalPrice, setTotalPrice] = useState<number>(0);
+
+    const [isExpanded, setIsExpanded] = useState(false);
+    const maxLength = 50; 
+
+    const toggleExpand = () => setIsExpanded(!isExpanded);
 
     //Tính tổng giá tiền
     useEffect(() =>{
@@ -107,7 +114,19 @@ const ProductDetailScreen: React.FC = () => {
                     <View style={styles.productInfo}>
                         <Text style={styles.productName}>{product.name}</Text>
                         <AntDesign name="hearto" size={24} color="#DC5D5D" style={styles.favoriteIcon} />
-                        <Text style={styles.descriptionInput}>{product.description}</Text>
+                        <Text style={styles.descriptionInput}>
+                            {isExpanded || product.description.length <= maxLength
+                                ? product.description
+                                : `${product.description.slice(0, maxLength)}... `}
+                            
+                            {product.description.length > maxLength && (
+                                <TouchableOpacity onPress={toggleExpand}>
+                                    <Text style={styles.expandText}>
+                                        {isExpanded ? "Thu gọn" : "Xem thêm"}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+                        </Text>
                     </View>
                 </View>
 
@@ -128,10 +147,52 @@ const ProductDetailScreen: React.FC = () => {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Chọn mức đường</Text>
-                    {["Ngọt bình thường", "Ít ngọt", "Không đường"].map((option, index) => (
-                        <TouchableOpacity key={index} style={styles.optionRow}>
-                            <AntDesign name="checkcircle" size={20} color={index === 0 ? "#000" : "#CCC"} />
-                            <Text style={{ marginLeft: 10 }}>{option}</Text>
+                    {['Không ngọt', 'Ít ngọt', 'Ngọt bình thường', 'Nhiều ngọt'].map((option) => (
+                        <TouchableOpacity
+                            key={option}
+                            style={styles.optionRow}
+                            onPress={() => setSelectedSweet(option)}
+                        >
+                            <AntDesign
+                                name="checkcircle"
+                                size={20}
+                                color={selectedSweet === option ? "#0A1858" : "#737373"}
+                            />
+                            <Text
+                                style={{
+                                    marginLeft: 10,
+                                    color: selectedSweet === option ? "#0A1858" : "#737373",
+                                    fontWeight: selectedSweet === option ? "bold" : "normal",
+                                }}
+                            >
+                                {option}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Chọn mức đá</Text>
+                    {['Không đá', 'Ít đá', 'Đá bình thường', 'Đá riêng'].map((option) => (
+                        <TouchableOpacity
+                            key={option}
+                            style={styles.optionRow}
+                            onPress={() => setSelectedIce(option)}
+                        >
+                            <AntDesign
+                                name="checkcircle"
+                                size={20}
+                                color={selectedIce === option ? "#0A1858" : "#737373"}
+                            />
+                            <Text
+                                style={{
+                                    marginLeft: 10,
+                                    color: selectedIce === option ? "#0A1858" : "#737373",
+                                    fontWeight: selectedIce === option ? "bold" : "normal",
+                                }}
+                            >
+                                {option}
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -256,10 +317,10 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFF",
         fontSize: 12,
         color: "#737373",
-        textAlign: "justify", // Căn đều hai bên cho đẹp
-        lineHeight: 22, // Tăng khoảng cách dòng để dễ đọc
-        width: "100%", // Chiều rộng full để không bị cắt chữ
-        flexWrap: "wrap" // Đảm bảo chữ không bị tràn
+        textAlign: "justify", 
+        lineHeight: 22, 
+        width: "100%", 
+        flexWrap: "wrap" 
     },
     sectionHead: {
         backgroundColor: "#FFF",
@@ -309,7 +370,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#F5F5F5"
     },
     quantityContainer: {
-        backgroundColor: "white",
+        backgroundColor: "#E6EFE6",
         padding: 10,
         flexDirection: "row",
         justifyContent: "space-between",
@@ -338,4 +399,8 @@ const styles = StyleSheet.create({
         color: "#FFF",
         fontWeight: "bold",
     },
+    expandText: {
+        color: '#007bff',
+        textDecorationLine: 'underline',
+    }
 });
