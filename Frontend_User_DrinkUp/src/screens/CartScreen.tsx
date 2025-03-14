@@ -148,13 +148,14 @@ const CartScreen: React.FC = () => {
               <Text style={styles.productSize}>Size {item.size}</Text>
               <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
 
-              {/* {item.toppings.map((topping) => (
+              {item.toppings.map((topping) => (
                 <View key={topping._id} style={styles.toppingContainer}>
                   <Text style={styles.toppingText}>
+                    
                     + {topping.toppingId.name} x{topping.quantity} ({topping.toppingId.price.toLocaleString("vi-VN")}đ)
                   </Text>
                 </View>
-              ))} */}
+              ))}
 
               <View style={{ flex: 1 }} />
               <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>

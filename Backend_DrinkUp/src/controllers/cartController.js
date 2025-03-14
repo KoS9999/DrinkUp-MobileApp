@@ -37,6 +37,10 @@ exports.addToCart = async (req, res) => {
   try {
       // Chuyển đổi productId thành ObjectId để tránh lỗi kiểu dữ liệu
       const productObjectId = new mongoose.Types.ObjectId(productId);
+      const toppingObjectIds = Array.isArray(toppings) ? toppings.map(topping => ({
+        toppingId: new mongoose.Types.ObjectId(topping.toppingId),
+        quantity: topping.quantity
+      })) : [];
 
       const product = await Product.findById(productObjectId);
       if (!product) {
@@ -50,12 +54,15 @@ exports.addToCart = async (req, res) => {
 
       let cart = await Cart.findOne({ userId });
       if (cart) {
-          const existingItem = cart.items.find(item => 
-              item.productId.equals(productObjectId) && 
-              item.size === size && 
-              item.iceLevel === iceLevel && 
-              item.sweetLevel === sweetLevel
-          );
+        const existingItem = cart.items.find(item => 
+          item.productId.equals(productObjectId) && 
+          item.size === size && 
+          item.iceLevel === iceLevel && 
+          item.sweetLevel === sweetLevel &&
+          item.toppings.length === toppings.length && 
+          item.toppings.map(t => t.toppingId.toString()).sort().join(',') === 
+          toppings.map(t => t.toppingId.toString()).sort().join(',')
+      );
 
           if (existingItem) {
               existingItem.quantity += quantity;
@@ -64,7 +71,7 @@ exports.addToCart = async (req, res) => {
                   productId: productObjectId, // Sử dụng ObjectId thay vì string
                   quantity,
                   size,
-                  toppings,
+                  toppings: toppingObjectIds,
                   iceLevel,
                   sweetLevel
               });
@@ -76,7 +83,7 @@ exports.addToCart = async (req, res) => {
                   productId: productObjectId, // Sử dụng ObjectId thay vì string
                   quantity,
                   size,
-                  toppings,
+                  toppings: toppingObjectIds,
                   iceLevel,
                   sweetLevel
               }]
@@ -85,7 +92,13 @@ exports.addToCart = async (req, res) => {
       await cart.save();
 
       const populatedCart = await Cart.findById(cart._id).populate('items.productId', 'name imageUrl price')
-                                                        .populate('items.toppings.toppingId', 'name price')
+                                                        .populate({
+                                                          path: 'items.toppings',
+                                                          populate: {
+                                                            path: 'toppingId',
+                                                            select: 'name price'
+                                                          }
+                                                        })
                                                         .exec();
       res.status(201).json(populatedCart);
   } catch (error) {
