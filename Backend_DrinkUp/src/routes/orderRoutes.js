@@ -5,5 +5,7 @@ const orderController = require('../controllers/orderController');
 
 router.post('/order/create/cod', authenticate, orderController.createOrder);
 router.get('/branches', orderController.getBranches);
+router.post('/apply-coupon', authenticate, orderController.applyCoupon);
+
 
 module.exports = router;
