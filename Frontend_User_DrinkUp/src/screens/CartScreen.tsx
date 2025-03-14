@@ -3,7 +3,7 @@ import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIn
 import { AntDesign } from "@expo/vector-icons";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { useCart } from "../components/CartContext";
 
 type Product = {
   _id: string;
@@ -77,6 +77,7 @@ const CartScreen: React.FC = () => {
   const [cart, setCart] = useState<CartData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [quantity, setQuantity] = useState<number>(1);
+  const { items, totalAmount, removeFromCart } = useCart();
 
   useEffect(() => {
     const fetchCart = async () =>{
@@ -93,6 +94,8 @@ const CartScreen: React.FC = () => {
         // const text = await response.text();
         // console.log("Response Text:", text);
         const data = await response.json();
+        console.log("API Response:", data);
+
         if (response.ok) {
           setCart(data);
           setLoading(false);
@@ -108,14 +111,14 @@ const CartScreen: React.FC = () => {
     fetchCart();
   }, []);
 
-  const calculateTotalAmount = () => {
-    if (!cart) return 0;
-    return cart.items.reduce((total, item) => {
-      const productPrice = item.productId.price[item.size] * item.quantity;
-      const toppingPrice = item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0);
-      return total + productPrice + toppingPrice;
-    }, 0);
-  };
+  // const calculateTotalAmount = () => {
+  //   if (!cart) return 0;
+  //   return cart.items.reduce((total, item) => {
+  //     const productPrice = item.productId.price[item.size] * item.quantity;
+  //     const toppingPrice = item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0);
+  //     return total + productPrice + toppingPrice;
+  //   }, 0);
+  // };
 
   if (loading) {
     return (
@@ -134,44 +137,51 @@ const CartScreen: React.FC = () => {
       </View>
 
       {cart?.items.map((item) => (
-        <View key={item._id} style={styles.productContainer}>
-          <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
-          <View style={styles.productDetails}>
-            <Text style={styles.productName}>{item.productId.name}</Text>
-            <Text style={styles.productSize}>Size {item.size}</Text>
-            <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
+        item.productId ? (
 
-            {item.toppings.map((topping) => (
-              <View key={topping._id} style={styles.toppingContainer}>
-                <Text style={styles.toppingText}>
-                  + {topping.toppingId.name} x{topping.quantity} ({topping.toppingId.price.toLocaleString("vi-VN")}đ)
-                </Text>
-              </View>
-            ))}
+          <View key={item._id} style={styles.productContainer}>
+            <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
+            <View style={styles.productDetails}>
 
-            <View style={{ flex: 1 }} />
-            <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
-            <Text style={styles.productPrice}>
-              {(item.productId.price[item.size] * item.quantity + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)).toLocaleString("vi-VN")}đ
-            </Text>
-              <View style={styles.quantityControl}>
-                <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                  <AntDesign name="minuscircleo" size={24} color="black" />
-                </TouchableOpacity>
-                <Text style={styles.quantityText}>{quantity}</Text>
-                <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                  <AntDesign name="pluscircleo" size={24} color="black" />
-                </TouchableOpacity>
+              <Text style={styles.productName}>{item.productId.name}</Text>
+              
+              <Text style={styles.productSize}>Size {item.size}</Text>
+              <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
+
+              {/* {item.toppings.map((topping) => (
+                <View key={topping._id} style={styles.toppingContainer}>
+                  <Text style={styles.toppingText}>
+                    + {topping.toppingId.name} x{topping.quantity} ({topping.toppingId.price.toLocaleString("vi-VN")}đ)
+                  </Text>
+                </View>
+              ))} */}
+
+              <View style={{ flex: 1 }} />
+              <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
+              {/* <Text style={styles.productPrice}>
+                {(item.productId.price[item.size] * item.quantity + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)).toLocaleString("vi-VN")}đ
+              </Text> */}
+                <View style={styles.quantityControl}>
+                  <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                    <AntDesign name="minuscircleo" size={24} color="black" />
+                  </TouchableOpacity>
+                  <Text style={styles.quantityText}>{quantity}</Text>
+                  <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                    <AntDesign name="pluscircleo" size={24} color="black" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
 
-        </View>
+          </View>
+        ):(
+          <Text key={item._id} style={{ color: "red" }}>Lỗi: Sản phẩm không tồn tại!</Text> // Hiển thị lỗi
+        )
       ))
       }
       <View style={styles.totalContainer}>
         <Text style={styles.totalText}>{cart?.items.length} sản phẩm</Text>
-        <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
+        {/* <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text> */}
       </View>
       <TouchableOpacity style={styles.continueButton}>
         <Text style={styles.continueText}>Tiếp tục</Text>
@@ -184,6 +194,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
+    marginBottom: 20
   },
   header: {
     fontSize: 18,

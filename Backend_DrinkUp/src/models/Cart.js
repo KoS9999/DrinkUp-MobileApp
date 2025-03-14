@@ -28,6 +28,13 @@ const CartSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+CartSchema.statics.getCartByUserId = async function (userId) {
+  return await this.findOne({ userId })
+    .populate('items.productId', 'name imageUrl price')
+    .populate('items.toppings.toppingId', 'name price')
+    .exec();
+};
+
 // CartSchema.pre('save', async function (next) {
 //   try {
 //     for (let item of this.items) {
@@ -45,13 +52,6 @@ const CartSchema = new mongoose.Schema({
 //     next(error);
 //   }
 // });
-
-CartSchema.statics.getCartByUserId = async function (userId) {
-  return await this.findOne({ userId })
-    .populate('items.productId', 'name imageUrl price')
-    .populate('items.toppings.toppingId', 'name price')
-    .exec();
-};
 
 // CartSchema.pre('findOneAndUpdate', async function (next) {
 //   try {

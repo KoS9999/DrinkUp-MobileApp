@@ -4,6 +4,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import { AntDesign } from "@expo/vector-icons";
 import { useFonts } from 'expo-font';
 import { API_BASE_URL } from "../config/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Topping {
     name: string;
@@ -22,6 +23,16 @@ interface Product {
 interface RouteParams {
     productId: string;
 }
+
+const getAuthToken = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+    if (!token) {
+        console.error("Missing token");
+    }
+    console.log("Token", token);
+    return token;
+}
+
 const ProductDetailScreen: React.FC = () => {
     const route = useRoute();
     const navigation = useNavigation();
@@ -39,13 +50,13 @@ const ProductDetailScreen: React.FC = () => {
     const [totalPrice, setTotalPrice] = useState<number>(0);
 
     const [isExpanded, setIsExpanded] = useState(false);
-    const maxLength = 50; 
+    const maxLength = 50;
 
     const toggleExpand = () => setIsExpanded(!isExpanded);
 
     //Tính tổng giá tiền
-    useEffect(() =>{
-        if(!product) return;
+    useEffect(() => {
+        if (!product) return;
 
         const sizePrice = product.price[selectedSize] || 0;
         const toppingPrice = Object.entries(selectedTopping).reduce((sum, [index, count]) => {
@@ -72,6 +83,40 @@ const ProductDetailScreen: React.FC = () => {
                 return { ...prev, [index]: prev[index] - 1 };
             }
         })
+    }
+
+    const handleAddToCart = async () => {
+        try {
+            const token = await getAuthToken();
+
+            const response = await fetch(`${API_BASE_URL}/cart/add`, {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    productId: product?._id,
+                    quantity,
+                    size: selectedSize,
+                    selectedIce,
+                    selectedSweet,
+                    toppings: selectedTopping,
+                }),
+            });
+
+            if(!response.ok){
+                throw new Error(`Lỗi API: ${response.status}`);
+            }
+
+            const data = await response.json();
+            alert("Thêm vào giỏ hàng thành công!");
+            console.log("✅ Response:", data);
+        } catch (error) {
+            console.error("❌ Lỗi khi thêm vào giỏ hàng:", error);
+            alert("Thêm vào giỏ hàng thất bại!");
+        }
     }
 
     useEffect(() => {
@@ -118,7 +163,7 @@ const ProductDetailScreen: React.FC = () => {
                             {isExpanded || product.description.length <= maxLength
                                 ? product.description
                                 : `${product.description.slice(0, maxLength)}... `}
-                            
+
                             {product.description.length > maxLength && (
                                 <TouchableOpacity onPress={toggleExpand}>
                                     <Text style={styles.expandText}>
@@ -241,9 +286,9 @@ const ProductDetailScreen: React.FC = () => {
             </ScrollView>
 
             <View style={styles.quantityContainer}>
-                <View style = {{flexDirection: "column"}}>
-                    <Text style = {{color: '#0A1858'}}> {quantity} sản phẩm</Text>
-                    <Text style = {{paddingLeft: 5, marginTop: 5, color: '#0A1858', fontSize: 20, fontWeight: "600"}}>{totalPrice.toLocaleString('vi-VN')} đ</Text>
+                <View style={{ flexDirection: "column" }}>
+                    <Text style={{ color: '#0A1858' }}> {quantity} sản phẩm</Text>
+                    <Text style={{ paddingLeft: 5, marginTop: 5, color: '#0A1858', fontSize: 20, fontWeight: "600" }}>{totalPrice.toLocaleString('vi-VN')} đ</Text>
                 </View>
                 {/* <View style = {{flexDirection: "column"}}>
                     <Text style = {{marginBottom: 10}}>Số lượng</Text>
@@ -261,7 +306,7 @@ const ProductDetailScreen: React.FC = () => {
             </View>
 
             <View style={styles.quantityContainer}>
-                <TouchableOpacity style={styles.addToCartButton}>
+                <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
                     <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
                 </TouchableOpacity>
             </View>
@@ -317,10 +362,10 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFF",
         fontSize: 12,
         color: "#737373",
-        textAlign: "justify", 
-        lineHeight: 22, 
-        width: "100%", 
-        flexWrap: "wrap" 
+        textAlign: "justify",
+        lineHeight: 22,
+        width: "100%",
+        flexWrap: "wrap"
     },
     sectionHead: {
         backgroundColor: "#FFF",

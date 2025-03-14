@@ -1,5 +1,7 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const mongoose = require('mongoose');
+
 // const Topping = require('../models/Topping');
 
 exports.getCart = async (req, res) => {
@@ -29,32 +31,97 @@ exports.getCart = async (req, res) => {
 };
 
 exports.addToCart = async (req, res) => {
+  const { productId, quantity, size, toppings, iceLevel, sweetLevel } = req.body;
+  const userId = req.userId;
+
   try {
-    const { userId, productId, quantity, size, toppings } = req.body;
+      // Chuyển đổi productId thành ObjectId để tránh lỗi kiểu dữ liệu
+      const productObjectId = new mongoose.Types.ObjectId(productId);
 
-    const product = await Product.findById(productId);
-    if (!product) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+      const product = await Product.findById(productObjectId);
+      if (!product) {
+          return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
+      }
 
-    const price = product.price[size];
+      const price = product.price[size];
+      if (!price) {
+          return res.status(400).json({ message: 'Size không hợp lệ' });
+      }
 
-    let cart = await Cart.findOne({ userId });
-    if (!cart) {
-      cart = new Cart({ userId, items: [] });
-    }
+      let cart = await Cart.findOne({ userId });
+      if (cart) {
+          const existingItem = cart.items.find(item => 
+              item.productId.equals(productObjectId) && 
+              item.size === size && 
+              item.iceLevel === iceLevel && 
+              item.sweetLevel === sweetLevel
+          );
 
-    const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId && item.size === size);
-    if (itemIndex > -1) {
-      cart.items[itemIndex].quantity += quantity;
-    } else {
-      cart.items.push({ productId, quantity, size, toppings, price, iceLevel, sweetLevel });
-    }
+          if (existingItem) {
+              existingItem.quantity += quantity;
+          } else {
+              cart.items.push({
+                  productId: productObjectId, // Sử dụng ObjectId thay vì string
+                  quantity,
+                  size,
+                  toppings,
+                  iceLevel,
+                  sweetLevel
+              });
+          }
+      } else {
+          cart = new Cart({
+              userId,
+              items: [{
+                  productId: productObjectId, // Sử dụng ObjectId thay vì string
+                  quantity,
+                  size,
+                  toppings,
+                  iceLevel,
+                  sweetLevel
+              }]
+          });
+      }
+      await cart.save();
 
-    await cart.save();
-    res.json(cart);
+      const populatedCart = await Cart.findById(cart._id).populate('items.productId', 'name imageUrl price')
+                                                        .populate('items.toppings.toppingId', 'name price')
+                                                        .exec();
+      res.status(201).json(populatedCart);
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi khi thêm vào giỏ hàng' });
+      console.error(error);
+      res.status(500).json({ message: 'Lỗi server' });
   }
 };
+
+
+// exports.addToCart = async (req, res) => {
+//   try {
+//     const { userId, productId, quantity, size, toppings } = req.body;
+
+//     const product = await Product.findById(productId);
+//     if (!product) return res.status(404).json({ error: 'Sản phẩm không tồn tại' });
+
+//     const price = product.price[size];
+
+//     let cart = await Cart.findOne({ userId });
+//     if (!cart) {
+//       cart = new Cart({ userId, items: [] });
+//     }
+
+//     const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId && item.size === size);
+//     if (itemIndex > -1) {
+//       cart.items[itemIndex].quantity += quantity;
+//     } else {
+//       cart.items.push({ productId, quantity, size, toppings, price, iceLevel, sweetLevel });
+//     }
+
+//     await cart.save();
+//     res.json(cart);
+//   } catch (error) {
+//     res.status(500).json({ error: 'Lỗi khi thêm vào giỏ hàng' });
+//   }
+// };
 
 exports.removeFromCart = async (req, res) => {
   try {
@@ -105,65 +172,7 @@ exports.clearCart = async (req, res) => {
   }
 };
 
-// const addToCart = async (req, res) => {
-//   const { userId, productId, quantity, size, toppings, iceLevel, sweetLevel } = req.body;
 
-//   try {
-//       const product = await Product.findById(productId);
-//       if (!product) {
-//           return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
-//       }
-
-//       const price = product.price[size];
-//       if (!price) {
-//           return res.status(400).json({ message: 'Size không hợp lệ' });
-//       }
-
-//       const totalPrice = quantity * price;
-
-//       let cart = await Cart.findOne({ userId });
-//       if (cart) {
-//           const existingItem = cart.items.find(item => 
-//               item.productId.equals(productId) && item.size === size && 
-//               item.iceLevel === iceLevel && item.sweetLevel === sweetLevel
-//           );
-
-//           if (existingItem) {
-//               existingItem.quantity += quantity;
-//               existingItem.totalPrice += totalPrice;
-//           } else {
-//               cart.items.push({
-//                   productId,
-//                   quantity,
-//                   size,
-//                   toppings,
-//                   totalPrice,
-//                   iceLevel,
-//                   sweetLevel
-//               });
-//           }
-//       } else {
-//           cart = new Cart({
-//               userId,
-//               items: [{
-//                   productId,
-//                   quantity,
-//                   size,
-//                   toppings,
-//                   totalPrice,
-//                   iceLevel,
-//                   sweetLevel
-//               }]
-//           });
-//       }
-
-//       await cart.save();
-//       res.status(201).json(cart);
-//   } catch (error) {
-//       console.error(error);
-//       res.status(500).json({ message: 'Lỗi server' });
-//   }
-// };
 
 // const updateCartItem = async (req, res) => {
 //   const { userId, itemId } = req.params;
