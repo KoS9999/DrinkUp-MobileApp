@@ -62,7 +62,7 @@ const HomeTabs = () => {
       <Tab.Screen name="HomeTab" component={HomeScreen} />
       <Tab.Screen name="OrderTab" component={SearchScreen} />
       <Tab.Screen name="CartTab" component={CartScreen} />
-      <Tab.Screen name="StoreTab" component={StoreScreen} />
+      <Tab.Screen name="StoreTab" component={OrderScreen} />
       <Tab.Screen name="AccountTab" component={AccountStack} />
     </Tab.Navigator>
   );
