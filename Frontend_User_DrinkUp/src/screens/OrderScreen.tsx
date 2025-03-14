@@ -1,25 +1,84 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, FlatList, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native";
 import { RadioButton } from "react-native-paper";
 import { API_BASE_URL } from "../config/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TimePickerModal } from "react-native-paper-dates";
 
-const OrderScreen = () => {
+const getAuthToken = async () => {
+  return await AsyncStorage.getItem("userToken");
+};
+
+interface Product {
+  _id: string;
+  name: string;
+  imageUrl: string;
+  price: Record<string, number>;
+}
+
+interface CartItem {
+  _id: string;
+  productId: Product;
+  quantity: number;
+  size: string;
+}
+
+const OrderScreen: React.FC = () => {
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
   const [selectedPayment, setSelectedPayment] = useState("");
   const [promoCode, setPromoCode] = useState("");
+  const [discountPrice, setDiscountPrice] = useState(0);
   const [address, setAddress] = useState("");
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<any | null>(null);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [originalTotalPrice, setOriginalTotalPrice] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0);
+  const [pickupTime, setPickupTime] = useState<{ hours: number; minutes: number }>({ hours: 12, minutes: 0 });
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    fetchCart();
     fetchBranches();
   }, []);
+
+  useEffect(() => {
+    setTotalPrice(originalTotalPrice - discountPrice);
+  }, [originalTotalPrice, discountPrice]);
+
+  const fetchCart = async () => {
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/cart`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        const items: CartItem[] = data.items || [];
+        setCart(items);
+        const total = items.reduce((sum: number, item: CartItem) => {
+          const price = item.productId?.price?.[item.size] || 0;
+          return sum + price * (item.quantity || 0);
+        }, 0);
+        setOriginalTotalPrice(total);
+      } else {
+        console.error("Lỗi khi lấy giỏ hàng:", data.error);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy giỏ hàng:", error);
+    }
+  };
 
   const fetchBranches = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/order/branches`);
       const data = await response.json();
-
       if (data.success && Array.isArray(data.branches)) {
         setBranches(data.branches);
       } else {
@@ -28,6 +87,45 @@ const OrderScreen = () => {
     } catch (error) {
       console.error("Lỗi khi lấy danh sách chi nhánh:", error);
     }
+  };
+
+  const applyDiscount = async () => {
+    if (!promoCode.trim()) {
+      setDiscountPrice(0);
+      return;
+    }
+
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/order/apply-coupon`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ couponCode: promoCode }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setDiscountPrice(data.discountPrice);
+        alert(data.message);
+      } else {
+        alert(data.error || "Mã giảm giá không hợp lệ");
+        setDiscountPrice(0);
+      }
+    } catch (error) {
+      console.error("Lỗi khi áp dụng mã giảm giá:", error);
+    }
+  };
+
+  const onDismiss = () => {
+    setVisible(false);
+  };
+
+  const onConfirm = ({ hours, minutes }: { hours: number; minutes: number }) => {
+    setPickupTime({ hours, minutes });
+    setVisible(false);
   };
 
   return (
@@ -75,6 +173,16 @@ const OrderScreen = () => {
                 {selectedBranch && (
                   <Text style={styles.customerInfo}>Chi nhánh đã chọn: {selectedBranch.name}</Text>
                 )}
+                <TouchableOpacity onPress={() => setVisible(true)}>
+                  <Text style={styles.label}>Chọn thời gian đến lấy: {`${pickupTime.hours} : ${pickupTime.minutes.toString().padStart(2, '0')}`}</Text>
+                </TouchableOpacity>
+                <TimePickerModal
+                  visible={visible}
+                  onDismiss={onDismiss}
+                  onConfirm={onConfirm}
+                  hours={pickupTime.hours}
+                  minutes={pickupTime.minutes}
+                />
               </View>
             )}
           </View>
@@ -82,25 +190,53 @@ const OrderScreen = () => {
           {/* Tóm tắt đơn hàng */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tóm tắt đơn hàng</Text>
-            <View style={styles.orderItem}>
-              <Image source={{ uri: "https://via.placeholder.com/80" }} style={styles.productImage} />
-              <View style={styles.orderDetails}>
-                <Text style={styles.orderText}>Combo Lấp Lánh - Trà Sữa Chôm Chôm</Text>
-                <Text style={styles.orderDescription}>Size L, ít cà phê, ngọt vừa</Text>
-                <Text style={styles.orderPrice}>169,000đ</Text>
-              </View>
+            {cart.length > 0 ? (
+              cart.map((item) => (
+                <View key={item._id} style={styles.orderItem}>
+                  <Image source={{ uri: item.productId?.imageUrl}} style={styles.productImage} />
+                  <View style={styles.orderDetails}>
+                    <Text style={styles.orderText}>{item.productId?.name || "Sản phẩm không xác định"}</Text>
+                    <Text style={styles.orderDescription}>Số lượng: {item.quantity || 0}</Text>
+                    <Text style={styles.orderPrice}>{(item.productId?.price?.[item.size] || 0).toLocaleString()}đ</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text>Giỏ hàng trống</Text>
+            )}
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>Tổng cộng</Text>
+              <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
             </View>
           </View>
           {/* Khuyến mãi */}
           <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Khuyến mãi</Text>
-              <View style={styles.promoContainer}>
-                <TextInput style={styles.input} placeholder="Nhập mã khuyến mãi" value={promoCode} onChangeText={setPromoCode} />
-                <TouchableOpacity style={styles.applyButton}>
-                  <Text style={styles.applyButtonText}>Chọn</Text>
-                </TouchableOpacity>
-              </View>
+            <Text style={styles.sectionTitle}>Khuyến mãi</Text>
+            <View style={styles.promoContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập mã khuyến mãi"
+                value={promoCode}
+                onChangeText={(text) => {
+                  setPromoCode(text);
+                  if (!text) {
+                    setDiscountPrice(0);
+                  }
+                }}
+              />
+              <TouchableOpacity style={styles.applyButton} onPress={applyDiscount}>
+                <Text style={styles.applyButtonText}>Chọn</Text>
+              </TouchableOpacity>
             </View>
+          </View>
+          {/* Tổng cộng tiền */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tổng cộng</Text>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>Thành tiền</Text>
+              <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
+            </View>
+          </View>
           {/* Phương thức thanh toán */}
           <View style={styles.section}>
               <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
@@ -120,8 +256,8 @@ const OrderScreen = () => {
               <Text style={styles.sectionTitle}>Tổng cộng</Text>
               <View style={styles.totalContainer}>
                 <Text style={styles.totalText}>Thành tiền</Text>
-                <Text style={styles.totalPrice}>169,000đ</Text>
-              </View>
+                <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
+                </View>
               <TextInput style={styles.input} placeholder="Ghi chú cho đơn hàng..." />
             </View>
 
