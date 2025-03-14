@@ -12,6 +12,51 @@ exports.getBranches = async (req, res) => {
     res.status(500).json({ success: false, error: 'Lỗi khi lấy danh sách chi nhánh' });
   }
 };
+exports.applyCoupon = async (req, res) => {
+  try {
+    const { couponCode } = req.body;
+    const userId = req.user.id;
+
+    if (!couponCode) {
+      return res.status(400).json({ error: "Vui lòng nhập mã giảm giá" });
+    }
+
+    const coupon = await Coupon.findOne({ code: couponCode, isActive: true });
+
+    if (!coupon) {
+      return res.status(400).json({ error: "Mã giảm giá không hợp lệ" });
+    }
+
+    if (coupon.expirationDate < new Date()) {
+      return res.status(400).json({ error: "Mã giảm giá đã hết hạn" });
+    }
+
+    const cart = await Cart.findOne({ userId }).populate("items.productId");
+
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ error: "Giỏ hàng trống" });
+    }
+
+    const totalPrice = cart.items.reduce(
+      (sum, item) => sum + (item.productId.price[item.size] * item.quantity),
+      0
+    );
+
+    let discountPrice = coupon.discountValue;
+    const finalPrice = Math.max(0, totalPrice - discountPrice);
+
+    res.status(200).json({
+      success: true,
+      message: "Mã giảm giá đã được áp dụng",
+      couponCode,
+      discountPrice,
+      finalPrice,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Lỗi khi áp dụng mã giảm giá" });
+  }
+};
+
 
 exports.createOrder = async (req, res) => {
   try {
