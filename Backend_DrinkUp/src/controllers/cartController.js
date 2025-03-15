@@ -1,8 +1,7 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const mongoose = require('mongoose');
-
-// const Topping = require('../models/Topping');
+const Topping = require('../models/Topping');
 
 exports.getCart = async (req, res) => {
   try {
@@ -35,7 +34,6 @@ exports.addToCart = async (req, res) => {
   const userId = req.userId;
 
   try {
-      // Chuyển đổi productId thành ObjectId để tránh lỗi kiểu dữ liệu
       const productObjectId = new mongoose.Types.ObjectId(productId);
       const toppingObjectIds = Array.isArray(toppings) ? toppings.map(topping => ({
         toppingId: new mongoose.Types.ObjectId(topping.toppingId),
@@ -53,60 +51,86 @@ exports.addToCart = async (req, res) => {
       }
 
       let cart = await Cart.findOne({ userId });
+      let addedItem = null;
+
       if (cart) {
-        const existingItem = cart.items.find(item => 
-          item.productId.equals(productObjectId) && 
-          item.size === size && 
-          item.iceLevel === iceLevel && 
-          item.sweetLevel === sweetLevel &&
-          item.toppings.length === toppings.length && 
-          item.toppings.map(t => t.toppingId.toString()).sort().join(',') === 
-          toppings.map(t => t.toppingId.toString()).sort().join(',')
-      );
+          const existingItem = cart.items.find(item => 
+              item.productId.equals(productObjectId) && 
+              item.size === size && 
+              item.iceLevel === iceLevel && 
+              item.sweetLevel === sweetLevel &&
+              item.toppings.length === toppings.length && 
+              item.toppings.map(t => t.toppingId.toString()).sort().join(',') === 
+              toppings.map(t => t.toppingId.toString()).sort().join(',')
+          );
 
           if (existingItem) {
               existingItem.quantity += quantity;
+              addedItem = existingItem;
           } else {
-              cart.items.push({
-                  productId: productObjectId, // Sử dụng ObjectId thay vì string
+              addedItem = {
+                  productId: productObjectId,
                   quantity,
                   size,
                   toppings: toppingObjectIds,
                   iceLevel,
                   sweetLevel
-              });
+              };
+              cart.items.push(addedItem);
           }
       } else {
+          addedItem = {
+              productId: productObjectId,
+              quantity,
+              size,
+              toppings: toppingObjectIds,
+              iceLevel,
+              sweetLevel
+          };
           cart = new Cart({
               userId,
-              items: [{
-                  productId: productObjectId, // Sử dụng ObjectId thay vì string
-                  quantity,
-                  size,
-                  toppings: toppingObjectIds,
-                  iceLevel,
-                  sweetLevel
-              }]
+              items: [addedItem]
           });
       }
       await cart.save();
 
-      const populatedCart = await Cart.findById(cart._id).populate('items.productId', 'name imageUrl price')
-                                                        .populate({
-                                                          path: 'items.toppings',
-                                                          populate: {
-                                                            path: 'toppingId',
-                                                            select: 'name price'
-                                                          }
-                                                        })
-                                                        .exec();
+      // Populate để lấy thông tin chi tiết sản phẩm và topping
+      const populatedCart = await Cart.findById(cart._id)
+          .populate('items.productId', 'name imageUrl price')
+          .populate({
+              path: 'items.toppings',
+              populate: {
+                  path: 'toppingId',
+                  select: 'name price'
+              }
+          })
+          .exec();
+
+      // Lấy thông tin chi tiết của sản phẩm vừa thêm vào giỏ hàng
+      const addedProduct = await Product.findById(addedItem.productId).select('name price');
+      const addedToppings = await Promise.all(addedItem.toppings.map(async topping => {
+          const toppingData = await Topping.findById(topping.toppingId).select('name price');
+          return { name: toppingData.name, price: toppingData.price, quantity: topping.quantity };
+      }));
+
+      console.log('📦 Sản phẩm mới được thêm vào giỏ hàng:');
+      console.log(`- Tên sản phẩm: ${addedProduct.name}`);
+      console.log(`- Kích thước: ${size}`);
+      console.log(`- Giá: ${addedProduct.price[size]} VND`);
+      console.log(`- Số lượng: ${addedItem.quantity}`);
+      console.log(`- Độ đá: ${iceLevel}`);
+      console.log(`- Độ ngọt: ${sweetLevel}`);
+      console.log('- Topping:');
+      addedToppings.forEach(topping => {
+          console.log(`  + ${topping.name}: ${topping.price} VND x ${topping.quantity}`);
+      });
+
       res.status(201).json(populatedCart);
   } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Lỗi server' });
   }
 };
-
 
 // exports.addToCart = async (req, res) => {
 //   try {

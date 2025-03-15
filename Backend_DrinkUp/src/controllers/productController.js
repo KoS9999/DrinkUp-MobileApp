@@ -19,7 +19,11 @@ const findProductById = async (req, res) => {
             return res.status(404).json({message: 'Không tìm thấy sản phẩm'});
         }
 
-        res.status(200).json({ success: true, product });
+        res.status(200).json({ 
+            success: true, 
+            product,
+            sweetLevels: ['Không ngọt', 'Ít ngọt', 'Ngọt bình thường', 'Nhiều ngọt'],
+            iceLevels: ['Không đá', 'Ít đá', 'Đá bình thường', 'Đá riêng'], });
 
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

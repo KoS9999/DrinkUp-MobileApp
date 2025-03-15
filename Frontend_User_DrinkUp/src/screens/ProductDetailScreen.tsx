@@ -7,6 +7,7 @@ import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Topping {
+    _id: string;
     name: string;
     price: number;
 }
@@ -18,6 +19,7 @@ interface Product {
     description: string;
     price: Record<string, number>; // Giá theo size (S, M, L)
     toppings: Topping[];
+
 }
 
 interface RouteParams {
@@ -43,10 +45,12 @@ const ProductDetailScreen: React.FC = () => {
     const [quantity, setQuantity] = useState<number>(1);
 
     const [selectedSize, setSelectedSize] = useState("S");
-    const [selectedSweet, setSelectedSweet] = useState<string>('Ngọt bình thường');
-    const [selectedIce, setSelectedIce] = useState<string>('Đá bình thường');
+    const [selectedSweet, setSelectedSweet] = useState<string>("Ngọt bình thường");
+    const [selectedIce, setSelectedIce] = useState<string>("Đá bình thường");
 
-    const [selectedTopping, setSelectedTopping] = useState<{ [key: number]: number }>({});
+    // const [selectedTopping, setSelectedTopping] = useState<{ [key: number]: number }>({});
+    const [selectedTopping, setSelectedTopping] = useState<{ id: string, name: string, quantity: number }[]>([]);
+
     const [totalPrice, setTotalPrice] = useState<number>(0);
 
     const [isExpanded, setIsExpanded] = useState(false);
@@ -59,33 +63,47 @@ const ProductDetailScreen: React.FC = () => {
         if (!product) return;
 
         const sizePrice = product.price[selectedSize] || 0;
-        const toppingPrice = Object.entries(selectedTopping).reduce((sum, [index, count]) => {
-            return sum + (product.toppings[parseInt(index)].price * count);
+        const toppingPrice = selectedTopping.reduce((sum, topping) => {
+            const toppingData = product.toppings.find(t => t._id === topping.id)
+            return sum + (toppingData ? toppingData.price * topping.quantity : 0);
         }, 0);
 
         setTotalPrice((sizePrice + toppingPrice) * quantity);
     }, [selectedSize, selectedTopping, quantity, product]);
 
-    const handleToppingPress = (index: number) => {
+    const handleToppingPress = (topping: { _id: string; name: string }) => {
         setSelectedTopping((prev) => {
-            const newCount = (prev[index] || 0) + 1;
-            return { ...prev, [index]: newCount };
+            const existingTopping = prev.find(item => item.id === topping._id);
+
+            if (existingTopping) {
+                return prev.map(item =>
+                    item.id === topping._id ? { ...item, quantity: item.quantity + 1 } : item
+                );
+            }
+
+            return [...prev, { id: topping._id, name: topping.name, quantity: 1 }];
         });
     };
 
-    const handleToppingRemove = (index: number) => {
+
+    const handleToppingRemove = (topping: { _id: string }) => {
         setSelectedTopping((prev) => {
-            if (!prev[index] || prev[index] === 1) {
-                const newToppings = { ...prev };
-                delete newToppings[index];
-                return newToppings;
-            } else {
-                return { ...prev, [index]: prev[index] - 1 };
-            }
+            return prev
+                .map(item =>
+                    item.id === topping._id ? { ...item, quantity: item.quantity - 1 } : item
+                )
+                .filter(item => item.quantity > 0) // Xóa nếu quantity = 0
         })
     }
 
     const handleAddToCart = async () => {
+        console.log("selectedTopping:", selectedTopping);
+        console.log("Type of selectedTopping:", typeof selectedTopping);
+        console.log("Is array?", Array.isArray(selectedTopping));
+
+        console.log("selectedIce:", selectedIce); 
+        console.log("selectedSweet:", selectedSweet);
+
         try {
             const token = await getAuthToken();
 
@@ -100,15 +118,25 @@ const ProductDetailScreen: React.FC = () => {
                     productId: product?._id,
                     quantity,
                     size: selectedSize,
-                    selectedIce,
-                    selectedSweet,
-                    toppings: selectedTopping,
+                    iceLevel: selectedIce,
+                    sweetLevel: selectedSweet,
+                    toppings: Array.isArray(selectedTopping)
+                        ? selectedTopping.map(topping => ({
+                            toppingId: topping.id,
+                            quantity: topping.quantity ?? 1
+                        }))
+                        : Object.entries(selectedTopping).map(([toppingId, quantity]) => ({
+                            toppingId,
+                            quantity
+                        }))
                 }),
             });
 
-            if(!response.ok){
+            if (!response.ok) {
                 throw new Error(`Lỗi API: ${response.status}`);
             }
+
+            console.log("🚀 Gửi API với dữ liệu:", response);
 
             const data = await response.json();
             alert("Thêm vào giỏ hàng thành công!");
@@ -128,6 +156,8 @@ const ProductDetailScreen: React.FC = () => {
 
                 if (data?.success) {
                     setProduct(data.product);
+                    setSelectedSweet(data.sweetLevels);
+                    setSelectedIce(data.iceLevels);
                     console.log("Received productId:", productId);
                 }
             })
@@ -244,21 +274,22 @@ const ProductDetailScreen: React.FC = () => {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Thêm topping</Text>
-                    {product.toppings.map((topping, index) => {
-                        const quantity = selectedTopping[index] || 0;
+                    {product.toppings.map((topping) => {
+                        const existingTopping = selectedTopping.find(item => item.id === topping._id);
+                        const quantity = existingTopping ? existingTopping.quantity : 0;
 
                         return (
-                            <TouchableOpacity key={index} style={styles.toppingRow}>
+                            <TouchableOpacity key={topping._id} style={styles.toppingRow}>
                                 <View style={styles.iconContainer}>
                                     {quantity > 0 ? (
                                         <>
-                                            <TouchableOpacity onPress={() => handleToppingRemove(index)}>
+                                            <TouchableOpacity onPress={() => handleToppingRemove(topping)}>
                                                 <AntDesign name="minus" size={18} color="#0A1858" />
                                             </TouchableOpacity>
                                             <Text style={styles.quantityText}>{quantity}</Text>
                                         </>
                                     ) : null}
-                                    <TouchableOpacity onPress={() => handleToppingPress(index)}>
+                                    <TouchableOpacity onPress={() => handleToppingPress(topping)}>
                                         <AntDesign name="plus" size={18} color="#0A1858" />
                                     </TouchableOpacity>
                                 </View>

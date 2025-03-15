@@ -151,7 +151,6 @@ const CartScreen: React.FC = () => {
               {item.toppings.map((topping) => (
                 <View key={topping._id} style={styles.toppingContainer}>
                   <Text style={styles.toppingText}>
-                    
                     + {topping.toppingId.name} x{topping.quantity} ({topping.toppingId.price.toLocaleString("vi-VN")}đ)
                   </Text>
                 </View>
