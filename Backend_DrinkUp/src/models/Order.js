@@ -30,6 +30,7 @@ const OrderSchema = new mongoose.Schema({
   pickupTime: { type: Date },
   deliveryAddress: { type: String },
   estimatedDeliveryTime: { type: Date },
+  note: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
 
