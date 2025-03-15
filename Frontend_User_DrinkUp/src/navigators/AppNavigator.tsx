@@ -20,6 +20,9 @@ import UpdateEmailScreen from "../screens/UpdateEmailScreen";
 import UpdatePhoneScreen from "../screens/UpdatePhoneScreen";
 import SearchScreen from "../screens/SearchScreen";
 import ProductDetailScreen from "../screens/ProductDetailScreen";
+import OrderDetailScreen from "../screens/OrderDetailScreen";
+import OrderHistoryScreen from "../screens/OrderHistoryScreen";
+
 
 import FooterNavigation from "../components/FooterNavigation";
 import { Product } from "../models/Product";
@@ -36,6 +39,8 @@ export type RootStackParamList = {
   UpdateProfileScreen: undefined;
   UpdateEmailScreen: undefined;
   UpdatePhoneScreen: undefined;
+  OrderHistoryScreen: undefined;
+  OrderDetailScreen: { orderId: string };
   SearchScreen: undefined;
   ProductDetailScreen: { productId: string};
   CartScreen: undefined;
@@ -73,6 +78,8 @@ const AccountStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AccountScreen" component={AccountScreen} />
       <Stack.Screen name="UpdateProfileScreen" component={UpdateProfileStack} />
+      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} /> 
+      <Stack.Screen name="OrderDetailScreen" component={OrderDetailScreen} />
     </Stack.Navigator>
   );
 };
