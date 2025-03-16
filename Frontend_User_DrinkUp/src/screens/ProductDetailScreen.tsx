@@ -19,7 +19,7 @@ interface Product {
     description: string;
     price: Record<string, number>; // Giá theo size (S, M, L)
     toppings: Topping[];
-
+    quantity: number;
 }
 
 interface RouteParams {
@@ -42,7 +42,7 @@ const ProductDetailScreen: React.FC = () => {
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
-    const [quantity, setQuantity] = useState<number>(1);
+    const [quantity, setQuantity] = useState<number>(product?.quantity ?? 1);
 
     const [selectedSize, setSelectedSize] = useState("S");
     const [selectedSweet, setSelectedSweet] = useState<string>("Ngọt bình thường");
@@ -101,7 +101,7 @@ const ProductDetailScreen: React.FC = () => {
         console.log("Type of selectedTopping:", typeof selectedTopping);
         console.log("Is array?", Array.isArray(selectedTopping));
 
-        console.log("selectedIce:", selectedIce); 
+        console.log("selectedIce:", selectedIce);
         console.log("selectedSweet:", selectedSweet);
 
         try {
@@ -116,7 +116,7 @@ const ProductDetailScreen: React.FC = () => {
                 },
                 body: JSON.stringify({
                     productId: product?._id,
-                    quantity,
+                    quantity: quantity,
                     size: selectedSize,
                     iceLevel: selectedIce,
                     sweetLevel: selectedSweet,
@@ -128,7 +128,7 @@ const ProductDetailScreen: React.FC = () => {
                         : Object.entries(selectedTopping).map(([toppingId, quantity]) => ({
                             toppingId,
                             quantity
-                        }))
+                        })),
                 }),
             });
 
@@ -329,7 +329,9 @@ const ProductDetailScreen: React.FC = () => {
                     <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
                         <AntDesign name="minuscircleo" size={24} color="black" />
                     </TouchableOpacity>
+
                     <Text style={styles.quantityText}>{quantity}</Text>
+
                     <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
                         <AntDesign name="pluscircleo" size={24} color="black" />
                     </TouchableOpacity>

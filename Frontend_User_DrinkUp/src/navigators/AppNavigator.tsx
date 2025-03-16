@@ -39,6 +39,7 @@ export type RootStackParamList = {
   SearchScreen: undefined;
   ProductDetailScreen: { productId: string};
   CartScreen: undefined;
+  OrderScreen: undefined;
 };
 
 export type TabParamList = {
@@ -143,6 +144,11 @@ export default function AppNavigator() {
             options={{ headerShown: false }}
             name="CartScreen"
             component={CartScreen}
+          />
+          <Stack.Screen
+            options={{ headerShown: false }}
+            name="OrderScreen"
+            component={OrderScreen}
           />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="PolicyScreen" component={PolicyScreen} />

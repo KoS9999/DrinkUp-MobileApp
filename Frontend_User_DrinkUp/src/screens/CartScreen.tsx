@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useNavigation } from '@react-navigation/native';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCart } from "../components/CartContext";
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigators/AppNavigator';
 
 type Product = {
   _id: string;
@@ -33,6 +36,7 @@ type CartData = {
   updatedAt: string;
 };
 
+type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'CartScreen'>;
 
 const getAuthToken = async () => {
   const token = await AsyncStorage.getItem("userToken");
@@ -78,9 +82,10 @@ const CartScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [quantity, setQuantity] = useState<number>(1);
   const { items, totalAmount, removeFromCart } = useCart();
+  const navigation = useNavigation<CartScreenNavigationProp>();
 
   useEffect(() => {
-    const fetchCart = async () =>{
+    const fetchCart = async () => {
       try {
         const token = await getAuthToken();
         const response = await fetch(`${API_BASE_URL}/cart`, {
@@ -111,14 +116,17 @@ const CartScreen: React.FC = () => {
     fetchCart();
   }, []);
 
-  // const calculateTotalAmount = () => {
-  //   if (!cart) return 0;
-  //   return cart.items.reduce((total, item) => {
-  //     const productPrice = item.productId.price[item.size] * item.quantity;
-  //     const toppingPrice = item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0);
-  //     return total + productPrice + toppingPrice;
-  //   }, 0);
-  // };
+  const calculateTotalAmount = () => {
+    if (!cart?.items || cart.items.length === 0) return 0;
+
+    return cart?.items.reduce((total, item) => {
+      const itemPrice = (item.productId.price[item.size] +
+        item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)
+      ) * item.quantity;
+
+      return total + itemPrice;
+    }, 0)
+  }
 
   if (loading) {
     return (
@@ -130,71 +138,75 @@ const CartScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>Giỏ hàng</Text>
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>Bạn có {cart?.items.length || 0} sản phẩm trong giỏ hàng</Text>
-      </View>
+    <View style={{ flex: 1, paddingBottom: 100 }}>
+      <ScrollView style={styles.container}>
+        <Text style={styles.header}>Giỏ hàng</Text>
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoText}>Bạn có {cart?.items.length || 0} sản phẩm trong giỏ hàng</Text>
+        </View>
 
-      {cart?.items.map((item) => (
-        item.productId ? (
+        {cart?.items.map((item) => (
+          item.productId ? (
 
-          <View key={item._id} style={styles.productContainer}>
-            <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
-            <View style={styles.productDetails}>
+            <View key={item._id} style={styles.productContainer}>
+              <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
+              <View style={styles.productDetails}>
 
-              <Text style={styles.productName}>{item.productId.name}</Text>
-              
-              <Text style={styles.productSize}>Size {item.size}</Text>
-              <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
+                <Text style={styles.productName}>{item.productId.name}</Text>
 
-              {item.toppings.map((topping) => (
-                <View key={topping._id} style={styles.toppingContainer}>
-                  <Text style={styles.toppingText}>
-                    + {topping.toppingId.name} x{topping.quantity} ({topping.toppingId.price.toLocaleString("vi-VN")}đ)
+                <Text style={styles.productSize}>Size {item.size}</Text>
+                <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
+
+                {item.toppings.map((topping) => (
+                  <View key={topping._id} style={styles.toppingContainer}>
+                    <Text style={styles.toppingText}>
+                      + {topping.toppingId.name} ({topping.toppingId.price.toLocaleString("vi-VN")}đ) x{topping.quantity}
+                    </Text>
+                  </View>
+                ))}
+
+                <View style={{ flex: 1 }} />
+                <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
+                  <Text style={styles.productPrice}>
+                    {((item.productId.price[item.size] + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)) * item.quantity).toLocaleString("vi-VN")}đ
                   </Text>
-                </View>
-              ))}
-
-              <View style={{ flex: 1 }} />
-              <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
-              {/* <Text style={styles.productPrice}>
-                {(item.productId.price[item.size] * item.quantity + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)).toLocaleString("vi-VN")}đ
-              </Text> */}
-                <View style={styles.quantityControl}>
-                  <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                    <AntDesign name="minuscircleo" size={24} color="black" />
-                  </TouchableOpacity>
-                  <Text style={styles.quantityText}>{quantity}</Text>
-                  <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                    <AntDesign name="pluscircleo" size={24} color="black" />
-                  </TouchableOpacity>
+                  <View style={styles.quantityControl}>
+                    <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                      <AntDesign name="minuscircleo" size={24} color="black" />
+                    </TouchableOpacity>
+                    <Text style={styles.quantityText}>{item.quantity}</Text>
+                    <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                      <AntDesign name="pluscircleo" size={24} color="black" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
 
-          </View>
-        ):(
-          <Text key={item._id} style={{ color: "red" }}>Lỗi: Sản phẩm không tồn tại!</Text> // Hiển thị lỗi
-        )
-      ))
-      }
+            </View>
+          ) : (
+            <Text key={item._id} style={{ color: "red" }}>Lỗi: Sản phẩm không tồn tại!</Text> // Hiển thị lỗi
+          )
+        ))
+        }
+      </ScrollView >
+
       <View style={styles.totalContainer}>
         <Text style={styles.totalText}>{cart?.items.length} sản phẩm</Text>
-        {/* <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text> */}
+        <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
       </View>
-      <TouchableOpacity style={styles.continueButton}>
+      <TouchableOpacity style={styles.continueButton} onPress={() => navigation.navigate("OrderScreen")}>
         <Text style={styles.continueText}>Tiếp tục</Text>
       </TouchableOpacity>
-    </ScrollView >
+
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    //flex: 1,
     backgroundColor: "#F5F5F5",
-    marginBottom: 20
+    paddingBottom: 100,
   },
   header: {
     fontSize: 18,
@@ -288,22 +300,22 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold"
   },
-  loadingContainer: { 
-    flex: 1, 
-    justifyContent: "center", 
-    alignItems: "center" 
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
   },
   toppingContainer: {
-    marginLeft: 10,         
-    paddingVertical: 2,     
-    paddingHorizontal: 5,   
-    backgroundColor: "#f9f9f9",  
-    borderRadius: 5,        
-    marginBottom: 3,        
+    marginLeft: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 5,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 5,
+    marginBottom: 3,
   },
   toppingText: {
-    fontSize: 14,         
-    color: "#555",      
+    fontSize: 14,
+    color: "#555",
   }
 });
 

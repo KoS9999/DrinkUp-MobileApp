@@ -197,7 +197,7 @@ const OrderScreen: React.FC = () => {
                   <View style={styles.orderDetails}>
                     <Text style={styles.orderText}>{item.productId?.name || "Sản phẩm không xác định"}</Text>
                     <Text style={styles.orderDescription}>Số lượng: {item.quantity || 0}</Text>
-                    <Text style={styles.orderPrice}>{(item.productId?.price?.[item.size] || 0).toLocaleString()}đ</Text>
+                    <Text style={styles.orderPrice}>{(item.productId?.price?.[item.size] || 0).toLocaleString()}đ / 1 món</Text>
                   </View>
                 </View>
               ))
