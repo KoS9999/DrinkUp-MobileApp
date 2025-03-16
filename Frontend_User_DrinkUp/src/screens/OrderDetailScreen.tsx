@@ -5,11 +5,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "../navigators/AppNavigator";
 
+type Topping = {
+  _id: string;
+  name: string;
+  price: number;
+  quantity: number;
+};
+
 type OrderDetail = {
   product: { name: string; imageUrl: string };
   quantity: number;
   size: string;
   price: number;
+  toppings: Topping[];
+  iceLevel: string;
+  sweetLevel: string;
 };
 
 type OrderInfo = {
@@ -35,6 +45,11 @@ const OrderDetailScreen: React.FC = () => {
   const fetchOrderDetails = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        console.error("Lỗi: Không tìm thấy token!");
+        return;
+      }
+  
       const response = await fetch(`${API_BASE_URL}/user/orders/${route.params.orderId}`, {
         method: "GET",
         headers: {
@@ -42,13 +57,15 @@ const OrderDetailScreen: React.FC = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       const data = await response.json();
-      if (response.ok) {
+      console.log("API Response (Order Details):", JSON.stringify(data, null, 2)); 
+  
+      if (response.ok && data.order && data.orderDetails) {
         setOrder(data.order);
         setOrderDetails(data.orderDetails);
       } else {
-        console.error("Lỗi lấy chi tiết đơn hàng:", data.error);
+        console.error("Lỗi lấy chi tiết đơn hàng:", data.error || "Dữ liệu không hợp lệ");
       }
     } catch (error) {
       console.error("Lỗi khi gọi API:", error);
@@ -56,6 +73,7 @@ const OrderDetailScreen: React.FC = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <View style={styles.container}>
@@ -75,21 +93,42 @@ const OrderDetailScreen: React.FC = () => {
               <Text style={styles.orderText}>📅 Ngày đặt: {new Date(order.createdAt).toLocaleDateString("vi-VN")}</Text>
             </View>
           )}
+          
           <Text style={styles.sectionTitle}>🛒 Sản phẩm đã đặt</Text>
           <FlatList
             data={orderDetails}
             keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.productCard}>
-                <Image source={{ uri: item.product.imageUrl }} style={styles.productImage} />
-                <View style={styles.productInfo}>
-                  <Text style={styles.productName}>{item.product.name}</Text>
-                  <Text style={styles.productDetails}>☕ Kích thước: {item.size}</Text>
-                  <Text style={styles.productDetails}>🔢 Số lượng: {item.quantity}</Text>
-                  <Text style={styles.productPrice}>💲 Giá: {item.price.toLocaleString()}đ</Text>
+            renderItem={({ item }) => {
+              const toppingPrice = item.toppings.reduce((sum, topping) => sum + topping.price * topping.quantity, 0);
+              const totalItemPrice = (item.price + toppingPrice) * item.quantity;
+
+              return (
+                <View style={styles.productCard}>
+                  <Image source={{ uri: item.product.imageUrl }} style={styles.productImage} />
+                  <View style={styles.productInfo}>
+                    <Text style={styles.productName}>{item.product.name}</Text>
+                    <Text style={styles.productDetails}>☕ Kích thước: {item.size}</Text>
+                    <Text style={styles.productDetails}>🔢 Số lượng: {item.quantity}</Text>
+                    <Text style={styles.productDetails}>🧊 Đá: {item.iceLevel} - 🍯 Đường: {item.sweetLevel}</Text>
+
+                    {/* Hiển thị danh sách toppings nếu có */}
+                    {item.toppings.length > 0 && (
+                        <View style={styles.toppingContainer}>
+                          <Text style={styles.toppingTitle}>🌟 Toppings:</Text>
+                          {item.toppings.map((topping) => (
+                            <Text key={topping._id} style={styles.toppingText}>
+                              + {topping.name} ({topping.price.toLocaleString()}đ) x{topping.quantity}
+                            </Text>
+                          ))}
+                        </View>
+                    )}
+
+
+                    <Text style={styles.productPrice}>💲 Giá tổng: {totalItemPrice.toLocaleString()}đ</Text>
+                  </View>
                 </View>
-              </View>
-            )}
+              );
+            }}
           />
         </>
       )}
@@ -145,6 +184,9 @@ const styles = StyleSheet.create({
   productInfo: { flex: 1 },
   productName: { fontSize: 16, fontWeight: "bold", color: "#6F4E37" },
   productDetails: { fontSize: 14, color: "#555", marginTop: 5 },
+  toppingContainer: { marginTop: 5, paddingLeft: 5, borderLeftWidth: 2, borderColor: "#FFA500" },
+  toppingTitle: { fontSize: 14, fontWeight: "bold", color: "#D2691E" },
+  toppingText: { fontSize: 14, color: "#555" },
   productPrice: { fontSize: 16, fontWeight: "bold", color: "#D2691E", marginTop: 5 },
 });
 
