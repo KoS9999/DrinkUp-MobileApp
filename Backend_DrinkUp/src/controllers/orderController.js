@@ -72,7 +72,10 @@ exports.createOrder = async (req, res) => {
 
     console.log("Dữ liệu đặt hàng:", { orderType, branchId, deliveryAddress, couponCode, paymentMethod, note });
 
-    const cart = await Cart.findOne({ userId }).populate("items.productId");
+    const cart = await Cart.findOne({ userId })
+      .populate("items.productId")
+      .populate("items.toppings.toppingId");
+
     if (!cart || cart.items.length === 0) {
       console.error("Giỏ hàng trống!");
       return res.status(400).json({ error: "Giỏ hàng trống" });
@@ -80,9 +83,28 @@ exports.createOrder = async (req, res) => {
 
     console.log("Giỏ hàng có:", cart.items.length, "món");
 
-    const totalPrice = cart.items.reduce((sum, item) => sum + (item.productId.price[item.size] * item.quantity), 0);
-    let discountPrice = 0;
+    let totalPrice = 0;
+    cart.items.forEach((item) => {
+      if (!item.productId || !item.productId.price || !item.productId.price[item.size]) {
+        console.error("Lỗi: Không tìm thấy giá sản phẩm!", item);
+        return res.status(400).json({ error: "Lỗi dữ liệu sản phẩm trong giỏ hàng" });
+      }
 
+      const basePrice = item.productId.price[item.size] || 0;
+
+      const toppingPrice = item.toppings.reduce((sum, topping) => {
+        if (!topping.toppingId || typeof topping.toppingId.price !== "number") {
+          console.warn("Lỗi: Dữ liệu topping bị thiếu hoặc không hợp lệ:", topping);
+          return sum; 
+        }
+        return sum + topping.toppingId.price * topping.quantity;
+      }, 0);
+      
+
+      totalPrice += (basePrice + toppingPrice) * item.quantity;
+    });
+
+    let discountPrice = 0;
     if (couponCode) {
       const coupon = await Coupon.findOne({ code: couponCode, isActive: true });
       if (!coupon) {
@@ -138,8 +160,16 @@ exports.createOrder = async (req, res) => {
           product: item.productId._id,
           quantity: item.quantity,
           size: item.size,
-          toppings: item.toppings,
-          price: item.productId.price[item.size],
+          iceLevel: item.iceLevel, 
+          sweetLevel: item.sweetLevel, 
+          toppings: item.toppings.map((topping) => ({
+            toppingId: topping.toppingId._id,
+            name: topping.toppingId.name,
+            price: topping.toppingId.price,
+            quantity: topping.quantity,
+          })),
+          price: item.productId.price[item.size], 
+          toppingsPrice: item.toppings.reduce((sum, topping) => sum + (topping.toppingId.price * topping.quantity), 0), 
         });
         await orderDetail.save();
       } catch (err) {
@@ -157,9 +187,11 @@ exports.createOrder = async (req, res) => {
       order: newOrder,
       note: "Vui lòng thanh toán khi nhận hàng",
     });
+
   } catch (error) {
     console.error("Lỗi khi tạo đơn hàng:", error);
     res.status(500).json({ error: "Lỗi khi tạo đơn hàng", details: error.message });
   }
 };
+
 
