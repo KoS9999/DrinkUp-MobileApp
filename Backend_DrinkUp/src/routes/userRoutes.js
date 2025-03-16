@@ -13,7 +13,6 @@ router.put('/update-profile-image', authenticate, upload.single('image'), userCo
 
 router.get('/orders', authenticate, userController.getOrderHistory);
 router.get('/orders/:orderId', authenticate, userController.getOrderDetails);
-router.post('/orders/:orderId/cancel', authenticate, userController.cancelOrder);
-router.post('/orders/:orderId/request-cancel', authenticate, userController.requestCancelOrder);
+router.post('/orders/:orderId/cancel', authenticate, userController.handleCancelOrder);
 
 module.exports = router;
