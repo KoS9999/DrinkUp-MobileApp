@@ -178,8 +178,39 @@ exports.getOrderDetails = async (req, res) => {
 
     const orderDetails = await OrderDetail.find({ orderId })
       .populate({ path: "product", select: "name imageUrl" }) 
-      .populate("toppings");
+      .populate({
+        path: "toppings.toppingId",
+        select: "name price",
+      });
 
+console.log("Order Details (Server):", JSON.stringify(orderDetails, null, 2));
+
+
+    const formattedOrderDetails = orderDetails.map((item) => ({
+      _id: item._id,
+      product: {
+        _id: item.product._id,
+        name: item.product.name,
+        imageUrl: item.product.imageUrl,
+      },
+      quantity: item.quantity,
+      size: item.size,
+      iceLevel: item.iceLevel, 
+      sweetLevel: item.sweetLevel, 
+      price: item.price, 
+      toppings: item.toppings.map((topping) => ({
+        _id: topping.toppingId._id,
+        name: topping.toppingId.name,
+        price: topping.toppingId.price,
+        quantity: topping.quantity,
+      })),
+      toppingsPrice: item.toppings.reduce(
+        (sum, topping) => sum + (topping.toppingId.price * topping.quantity || 0),
+        0
+      ), 
+    }));
+
+    
     res.status(200).json({
       message: "Chi tiết đơn hàng",
       order: {
@@ -188,13 +219,21 @@ exports.getOrderDetails = async (req, res) => {
         orderStatus: order.orderStatus,
         createdAt: order.createdAt,
         couponCode: order.couponCode || null,
+        branch: order.branchId
+          ? {
+              name: order.branchId.name,
+              address: order.branchId.address,
+            }
+          : null,
       },
-      orderDetails,
+      orderDetails: formattedOrderDetails,
     });
   } catch (error) {
+    console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
     res.status(500).json({ message: "Lỗi khi lấy chi tiết đơn hàng", error: error.message });
   }
 };
+
 
 
 // Hủy đơn hàng (chỉ được phép trước 30 phút sau khi đặt)
