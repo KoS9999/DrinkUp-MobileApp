@@ -45,7 +45,7 @@ const AccountScreen = () => {
     { label: "Danh sách yêu thích", icon: "heart-half", IconComponent: Ionicons },
     { label: "Đặc quyền hạng thành viên", icon: "medal", IconComponent: FontAwesome5 },
     { label: "Ưu đãi", icon: "pricetag", IconComponent: Ionicons },
-    { label: "Lịch sử đặt hàng", icon: "history", IconComponent: MaterialIcons },
+    { label: "Lịch sử đặt hàng", icon: "history", IconComponent: MaterialIcons, action: () => navigation.navigate("OrderHistoryScreen"), },
     { label: "Đánh giá đơn hàng", icon: "star", IconComponent: MaterialIcons },
     { label: "Giới thiệu bạn bè", icon: "supervised-user-circle", IconComponent: MaterialIcons },
   ];

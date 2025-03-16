@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Branch = require('./models/Branch');
+const Coupon = require('./models/Coupon'); 
 require('dotenv').config();
 
 mongoose.connect(process.env.MONGO_URI, {
@@ -8,16 +8,16 @@ mongoose.connect(process.env.MONGO_URI, {
 }).then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-const branchesData = [
-    { name: 'Chi nhánh 1', address: '123 Đường ABC, Quận 1, TP. Hồ Chí Minh', phone: '0123456789', openingHours: '08:00 - 22:00', status: 'open' },
-    { name: 'Chi nhánh 2', address: '456 Đường XYZ, Quận 3, TP. Hồ Chí Minh', phone: '0987654321', openingHours: '07:00 - 21:00', status: 'open' }
+const couponsData = [
+    { code: 'DISCOUNT10', discountValue: 10, expirationDate: new Date(new Date().setMonth(new Date().getMonth() + 10)), isActive: true },
+    { code: 'DISCOUNT20', discountValue: 20, expirationDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), isActive: true }
 ];
 
-const seedBranches = async () => {
+const seedCoupons = async () => {
     try {
-        await Branch.deleteMany();
-        const createdBranches = await Branch.insertMany(branchesData);
-        console.log('Chi nhánh đã được thêm:', createdBranches);
+        await Coupon.deleteMany(); 
+        const createdCoupons = await Coupon.insertMany(couponsData);
+        console.log('Mã giảm giá đã được thêm:', createdCoupons);
         mongoose.connection.close();
         console.log('Seeding hoàn tất!');
     } catch (error) {
@@ -26,4 +26,4 @@ const seedBranches = async () => {
     }
 };
 
-seedBranches();
+seedCoupons();

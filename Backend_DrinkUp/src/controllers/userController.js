@@ -169,28 +169,33 @@ exports.getOrderDetails = async (req, res) => {
     const userId = req.user.id;
 
     const order = await Order.findOne({ _id: orderId, user: userId })
-      .populate({
-        path: 'user',
-        select: 'name email phone'
-      })
-      .populate({
-        path: 'branchId',
-        select: 'name address'
-      });
+      .populate("user", "name email phone")
+      .populate("branchId", "name address");
 
     if (!order) {
-      return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
     }
 
     const orderDetails = await OrderDetail.find({ orderId })
-      .populate('product')
-      .populate('toppings');
+      .populate({ path: "product", select: "name imageUrl" }) 
+      .populate("toppings");
 
-    res.status(200).json({ message: 'Chi tiết đơn hàng', order, orderDetails });
+    res.status(200).json({
+      message: "Chi tiết đơn hàng",
+      order: {
+        _id: order._id,
+        finalPrice: order.finalPrice,
+        orderStatus: order.orderStatus,
+        createdAt: order.createdAt,
+        couponCode: order.couponCode || null,
+      },
+      orderDetails,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    res.status(500).json({ message: "Lỗi khi lấy chi tiết đơn hàng", error: error.message });
   }
 };
+
 
 // Hủy đơn hàng (chỉ được phép trước 30 phút sau khi đặt)
 exports.cancelOrder = async (req, res) => {

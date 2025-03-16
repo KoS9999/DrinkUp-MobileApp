@@ -4,19 +4,23 @@ import { RadioButton } from "react-native-paper";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { TimePickerModal } from "react-native-paper-dates";
+import { useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { TabParamList } from "../navigators/AppNavigator";
 
+type NavigationProps = BottomTabNavigationProp<TabParamList, "AccountTab">; 
 const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
 };
 
-interface Product {
+type Product = {
   _id: string;
   name: string;
   imageUrl: string;
   price: Record<string, number>;
 }
 
-interface CartItem {
+type CartItem = {
   _id: string;
   productId: Product;
   quantity: number;
@@ -36,6 +40,9 @@ const OrderScreen: React.FC = () => {
   const [totalPrice, setTotalPrice] = useState(0);
   const [pickupTime, setPickupTime] = useState<{ hours: number; minutes: number }>({ hours: 12, minutes: 0 });
   const [visible, setVisible] = useState(false);
+  const [note, setNote] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation<NavigationProps>();
 
   useEffect(() => {
     fetchCart();
@@ -128,11 +135,70 @@ const OrderScreen: React.FC = () => {
     setVisible(false);
   };
 
+  const placeOrder = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+  
+      const orderData = {
+        orderType: deliveryMethod,
+        branchId: deliveryMethod === "pickup" ? selectedBranch?._id : null,
+        deliveryAddress: deliveryMethod === "delivery" ? address : null,
+        couponCode: promoCode || null,
+        paymentMethod: selectedPayment.toLowerCase() === "cod" ? "cod" : "zaloPay",
+        note: note || "",
+      };
+  
+      console.log("Gửi request đặt hàng:", orderData);
+  
+      const response = await fetch(`${API_BASE_URL}/order/create/cod`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
+      });
+  
+      const text = await response.text();
+      console.log("API Response:", text);
+  
+      try {
+        const data = JSON.parse(text);
+        if (response.ok) {
+          alert("Đặt hàng thành công!\nMã đơn hàng: " + data.order._id);
+          // Xóa giỏ hàng trên client
+          setCart([]);
+        
+          navigation.navigate("AccountTab");  
+        } else {
+          alert(`Lỗi: ${data.error || "Có lỗi xảy ra khi đặt hàng."}`);
+        }
+      } catch (jsonError) {
+        console.error("Lỗi JSON Parse:", jsonError);
+        alert("Lỗi khi xử lý dữ liệu từ server. Vui lòng thử lại!");
+      }
+    } catch (error) {
+      console.error("Lỗi khi đặt hàng:", error);
+      alert("Không thể tạo đơn hàng. Vui lòng kiểm tra kết nối mạng!");
+    }
+  };
+  
+  const onRefresh = async () => {
+    setRefreshing(true); 
+    await fetchCart(); 
+    await fetchBranches(); 
+    setRefreshing(false); 
+  };
+  
+
   return (
     <FlatList
       data={["header"]}
       keyExtractor={(item) => item}
       contentContainerStyle={styles.listContainer}
+      keyboardShouldPersistTaps="handled"
+      refreshing={refreshing} 
+      onRefresh={onRefresh}
       renderItem={() => (
         <>
           {/* Phương thức nhận hàng */}
@@ -258,11 +324,16 @@ const OrderScreen: React.FC = () => {
                 <Text style={styles.totalText}>Thành tiền</Text>
                 <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
                 </View>
-              <TextInput style={styles.input} placeholder="Ghi chú cho đơn hàng..." />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ghi chú cho đơn hàng..."
+                  value={note}
+                  onChangeText={setNote}
+                />
             </View>
 
           {/* Nút đặt hàng */}
-          <TouchableOpacity style={styles.orderButton}>
+          <TouchableOpacity style={styles.orderButton} onPress={placeOrder}>
             <Text style={styles.orderButtonText}>Đặt hàng</Text>
           </TouchableOpacity>
         </>
