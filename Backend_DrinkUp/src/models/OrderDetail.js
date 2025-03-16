@@ -5,8 +5,19 @@ const OrderDetailSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   quantity: { type: Number, required: true },
   size: { type: String, enum: ['S', 'M', 'L'], required: true },
-  toppings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Topping' }],
-  price: { type: Number, required: true }
+  iceLevel: { type: String, required: true }, 
+  sweetLevel: { type: String, required: true }, 
+  toppings: [
+    {
+      _id: false,
+      toppingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Topping' },
+      name: String, 
+      price: Number, 
+      quantity: Number, 
+    }
+  ],
+  price: { type: Number, required: true },
+  toppingsPrice: { type: Number, default: 0 }, 
 });
 
 module.exports = mongoose.model('OrderDetail', OrderDetailSchema);
