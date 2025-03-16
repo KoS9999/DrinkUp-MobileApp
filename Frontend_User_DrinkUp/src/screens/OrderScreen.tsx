@@ -13,19 +13,32 @@ const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
 };
 
+type Topping = {
+  _id: string;
+  toppingId: {
+    _id: any;
+    name: string;
+    price: number;
+  };
+  quantity: number;
+};
 type Product = {
   _id: string;
   name: string;
   imageUrl: string;
   price: Record<string, number>;
-}
+};
 
 type CartItem = {
   _id: string;
   productId: Product;
   quantity: number;
-  size: string;
-}
+  size: "S" | "M" | "L"; 
+  iceLevel: string; 
+  sweetLevel: string; 
+  toppings: Topping[]; 
+};
+
 
 const OrderScreen: React.FC = () => {
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
@@ -54,33 +67,48 @@ const OrderScreen: React.FC = () => {
   }, [originalTotalPrice, discountPrice]);
 
   const fetchCart = async () => {
-    try {
-      const token = await getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/cart`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        credentials: "include",
-      });
-      const data = await response.json();
+  try {
+    const token = await getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/cart`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      credentials: "include",
+    });
+    
+    const data = await response.json();
+    console.log("API Response (OrderScreen):", data);
 
-      if (response.ok) {
-        const items: CartItem[] = data.items || [];
-        setCart(items);
-        const total = items.reduce((sum: number, item: CartItem) => {
-          const price = item.productId?.price?.[item.size] || 0;
-          return sum + price * (item.quantity || 0);
-        }, 0);
-        setOriginalTotalPrice(total);
-      } else {
-        console.error("Lỗi khi lấy giỏ hàng:", data.error);
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy giỏ hàng:", error);
+    if (response.ok) {
+      const items: CartItem[] = data.items?.map((item: any) => ({
+        _id: item._id,
+        productId: item.productId, 
+        quantity: item.quantity,
+        size: item.size,
+        iceLevel: item.iceLevel, 
+        sweetLevel: item.sweetLevel, 
+        toppings: item.toppings || [],
+      })) || [];
+
+      setCart(items);
+
+      const total = items.reduce((sum: number, item: CartItem) => {
+        const basePrice = item.productId?.price?.[item.size] || 0;
+        const toppingPrice = item.toppings.reduce((tSum, topping) => tSum + (topping.toppingId?.price || 0) * topping.quantity, 0);
+        return sum + (basePrice + toppingPrice) * item.quantity;
+      }, 0);
+      
+      setOriginalTotalPrice(total);
+    } else {
+      console.error("Lỗi khi lấy giỏ hàng:", data.error);
     }
-  };
+  } catch (error) {
+    console.error("Lỗi khi lấy giỏ hàng:", error);
+  }
+};
+
 
   const fetchBranches = async () => {
     try {
@@ -146,7 +174,21 @@ const OrderScreen: React.FC = () => {
         couponCode: promoCode || null,
         paymentMethod: selectedPayment.toLowerCase() === "cod" ? "cod" : "zaloPay",
         note: note || "",
+        cartItems: cart.map((item) => ({
+          productId: item.productId._id,
+          quantity: item.quantity,
+          size: item.size,
+          iceLevel: item.iceLevel, 
+          sweetLevel: item.sweetLevel,
+          toppings: item.toppings.map((t) => ({
+            toppingId: t.toppingId._id,
+            name: t.toppingId.name,
+            price: t.toppingId.price,
+            quantity: t.quantity,
+          })),
+        })),
       };
+      
   
       console.log("Gửi request đặt hàng:", orderData);
   
@@ -257,24 +299,54 @@ const OrderScreen: React.FC = () => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tóm tắt đơn hàng</Text>
             {cart.length > 0 ? (
-              cart.map((item) => (
-                <View key={item._id} style={styles.orderItem}>
-                  <Image source={{ uri: item.productId?.imageUrl}} style={styles.productImage} />
-                  <View style={styles.orderDetails}>
-                    <Text style={styles.orderText}>{item.productId?.name || "Sản phẩm không xác định"}</Text>
-                    <Text style={styles.orderDescription}>Số lượng: {item.quantity || 0}</Text>
-                    <Text style={styles.orderPrice}>{(item.productId?.price?.[item.size] || 0).toLocaleString()}đ / 1 món</Text>
+              cart.map((item) => {
+                const basePrice = item.productId?.price?.[item.size] || 0;
+                const toppingPrice = item.toppings.reduce((sum, topping) => sum + (topping.toppingId?.price || 0) * topping.quantity, 0);
+                const itemTotalPrice = (basePrice + toppingPrice) * item.quantity;
+
+                return (
+                  <View key={item._id} style={styles.orderItem}>
+                    {/* Hình ảnh sản phẩm */}
+                    <Image source={{ uri: item.productId?.imageUrl }} style={styles.productImage} />
+                    <View style={styles.orderDetails}>
+                      {/* Tên sản phẩm */}
+                      <Text style={styles.orderText}>{item.productId?.name || "Sản phẩm không xác định"}</Text>
+                      {/* Kích cỡ */}
+                      <Text style={styles.orderDescription}>Size: {item.size}</Text>
+                      {/* Số lượng */}
+                      <Text style={styles.orderDescription}>Số lượng: {item.quantity}</Text>
+                      {/* Độ đá & đường */}
+                      <Text style={styles.orderDescription}>Đá: {item.iceLevel} - Đường: {item.sweetLevel}</Text>
+
+                      {/* Hiển thị danh sách toppings nếu có */}
+                      {item.toppings.length > 0 && (
+                        <View style={styles.toppingContainer}>
+                          <Text style={styles.toppingTitle}>Toppings:</Text>
+                          {item.toppings.map((topping) => (
+                            <Text key={topping._id} style={styles.toppingText}>
+                              + {topping.toppingId.name} ({topping.toppingId.price.toLocaleString()}đ) x{topping.quantity}
+                            </Text>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* Giá tổng cho từng sản phẩm */}
+                      <Text style={styles.orderPrice}>{itemTotalPrice.toLocaleString()}đ</Text>
+                    </View>
                   </View>
-                </View>
-              ))
-            ) : (
-              <Text>Giỏ hàng trống</Text>
-            )}
-            <View style={styles.totalContainer}>
-              <Text style={styles.totalText}>Tổng cộng</Text>
-              <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
-            </View>
+                );
+              })
+                    ) : (
+                      <Text>Giỏ hàng trống</Text>
+                    )}
+
+          {/* Tổng tiền đơn hàng */}
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalText}>Tổng cộng</Text>
+            <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
           </View>
+        </View>
+
           {/* Khuyến mãi */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Khuyến mãi</Text>
@@ -443,6 +515,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#D2691E",
+  },
+
+  toppingContainer: {
+    marginTop: 5,
+    paddingLeft: 5,
+    borderLeftWidth: 2,
+    borderColor: "#FFA500",
+  },
+  toppingTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#D2691E",
+  },
+  toppingText: {
+    fontSize: 14,
+    color: "#555",
   },
   promoContainer: {
     flexDirection: "row",
