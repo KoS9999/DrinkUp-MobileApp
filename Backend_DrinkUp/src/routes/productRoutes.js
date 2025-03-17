@@ -1,9 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const productController = require ('../controllers/productController');
+const productController = require('../controllers/productController');
 
+// Route lấy sản phẩm theo ID
 router.get('/get-product/:id', productController.findProductById);
+
+// Route đếm số khách đã mua sản phẩm
 router.get('/product/:id/customers', productController.countCustomersByProductId);
+
+// Route lấy bình luận của sản phẩm
 router.get('/product/:id/reviews', productController.getReviewsByProductId);
 
 module.exports = router;

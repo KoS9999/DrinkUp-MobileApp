@@ -5,12 +5,13 @@ const OrderDetail = require('../models/OrderDetail');
 const Product = require('../models/Product');
 const Topping = require('../models/Topping');
 
+// Find product by ID
 const findProductById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        if(!mongoose.Types.ObjectId.isValid(id)){
-            return res.status(400).json({message: 'ProductID không hợp lệ'});
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: 'ProductID không hợp lệ' });
         }
 
         const product = await Product.findById(id)
@@ -18,21 +19,22 @@ const findProductById = async (req, res) => {
             .populate('toppings', 'name price');
 
         if (!product) {
-            return res.status(404).json({message: 'Không tìm thấy sản phẩm'});
+            return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
         }
 
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             product,
             sweetLevels: ['Không ngọt', 'Ít ngọt', 'Ngọt bình thường', 'Nhiều ngọt'],
-            iceLevels: ['Không đá', 'Ít đá', 'Đá bình thường', 'Đá riêng'], });
-
+            iceLevels: ['Không đá', 'Ít đá', 'Đá bình thường', 'Đá riêng'],
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-exports.countCustomersByProductId = async (req, res) => {
+// Count customers who have bought the product
+const countCustomersByProductId = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -52,7 +54,9 @@ exports.countCustomersByProductId = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
-exports.getReviewsByProductId = async (req, res) => {
+
+// Get reviews by product ID
+const getReviewsByProductId = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -75,4 +79,8 @@ exports.getReviewsByProductId = async (req, res) => {
     }
 };
 
-module.exports = {findProductById};
+module.exports = {
+    findProductById,
+    countCustomersByProductId,
+    getReviewsByProductId
+};
