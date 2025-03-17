@@ -1,6 +1,7 @@
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const OrderDetail = require('../models/OrderDetail');
+const Favorite = require('../models/Favorite');
 
 exports.getAllCategories = async (req, res) => {
     try {
@@ -184,5 +185,74 @@ exports.filterAndSortProducts = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ success: false, message: "Lỗi server", error: error.message });
+    }
+};
+
+exports.checkFavoriteStatus = async (req, res) => {
+    try {
+        const { userId, productId } = req.body;
+
+        const favorite = await Favorite.findOne({ user: userId });
+
+        if (!favorite) {
+            return res.status(200).json({ isFavorite: false });
+        }
+
+        const isFavorite = favorite.products.includes(productId);
+
+        res.status(200).json({ isFavorite });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+exports.addToFavorites = async (req, res) => {
+    try {
+        const { userId, productId } = req.body;
+
+        let favorite = await Favorite.findOne({ user: userId });
+
+        if (!favorite) {
+            favorite = new Favorite({
+                user: userId,
+                products: [productId],
+            });
+            await favorite.save();
+            return res.status(201).json({ message: 'Product added to favorites', favorite });
+        }
+
+        if (favorite.products.includes(productId)) {
+            return res.status(400).json({ message: 'Product is already in favorites' });
+        }
+        favorite.products.push(productId);
+        await favorite.save();
+
+        res.status(200).json({ message: 'Product added to favorites', favorite });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+exports.removeFromFavorites = async (req, res) => {
+    try {
+        const { userId, productId } = req.body;
+
+        let favorite = await Favorite.findOne({ user: userId });
+
+        if (!favorite) {
+            return res.status(400).json({ message: 'No favorites found for this user' });
+        }
+
+        if (!favorite.products.includes(productId)) {
+            return res.status(400).json({ message: 'Product not found in favorites' });
+        }
+
+        favorite.products = favorite.products.filter(product => product.toString() !== productId.toString());
+        await favorite.save();
+
+        res.status(200).json({ message: 'Product removed from favorites', favorite });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
