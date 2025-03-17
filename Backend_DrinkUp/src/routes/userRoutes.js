@@ -14,5 +14,6 @@ router.put('/update-profile-image', authenticate, upload.single('image'), userCo
 router.get('/orders', authenticate, userController.getOrderHistory);
 router.get('/orders/:orderId', authenticate, userController.getOrderDetails);
 router.post('/orders/:orderId/cancel', authenticate, userController.handleCancelOrder);
+router.post('/reviews/:orderDetailId', authenticate, userController.createReview);
 
 module.exports = router;

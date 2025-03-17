@@ -9,5 +9,6 @@ const UserSchema = new mongoose.Schema({
   profileImage: { type: String },
   createdAt: { type: Date, default: Date.now },
   enable: { type: Boolean, default: true },
+  points: { type: Number, default: 0 },
 });
 module.exports = mongoose.model('User', UserSchema);
