@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigation } from '@react-navigation/native';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Button, Modal } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCart } from "../components/CartContext";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
+import Toast from "react-native-toast-message";
+import { FlatList } from "react-native";
+
 
 type Product = {
   _id: string;
@@ -81,38 +84,45 @@ const CartScreen: React.FC = () => {
   const [cart, setCart] = useState<CartData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [quantity, setQuantity] = useState<number>(1);
-  const { items, totalAmount, removeFromCart } = useCart();
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<CartScreenNavigationProp>();
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const fetchCart = async () => {
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/cart`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      if (response.ok || response.status === 404) {
+        setCart(data);
+      } else {
+        Toast.show({
+          type: "info",
+          text1: "Thông báo",
+          text2: "Bạn chưa có sản phẩm nào trong giỏ hàng 👀",
+          position: "top",
+          visibilityTime: 4000,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const token = await getAuthToken();
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-          method: "GET",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
-        });
-        // const text = await response.text();
-        // console.log("Response Text:", text);
-        const data = await response.json();
-        console.log("API Response:", data);
-
-        if (response.ok) {
-          setCart(data);
-          setLoading(false);
-        } else {
-          console.error("Failed to fetch cart:", data.message);
-        }
-      } catch (error) {
-        console.error("Error fetching cart:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchCart();
   }, []);
 
@@ -128,6 +138,26 @@ const CartScreen: React.FC = () => {
     }, 0)
   }
 
+  const removeFromCart = async (itemId: string) => {
+    try {
+      //await fetch(`API_URL/cart/remove`, {
+      await fetch(`${API_BASE_URL}/cart/remove`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId }),
+      });
+      fetchCart(); // Tải lại giỏ hàng sau khi xóa
+    } catch (error) {
+      console.error("Lỗi khi xóa sản phẩm:", error);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCart();
+    setRefreshing(false);
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -139,22 +169,59 @@ const CartScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1, paddingBottom: 100 }}>
-      <ScrollView style={styles.container}>
-        <Text style={styles.header}>Giỏ hàng</Text>
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>Bạn có {cart?.items.length || 0} sản phẩm trong giỏ hàng</Text>
-        </View>
+      <FlatList
+        data={cart?.items || []} // Dữ liệu giỏ hàng
+        keyExtractor={(item) => item._id}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListHeaderComponent={
+          <>
+            <Text style={styles.header}>Giỏ hàng</Text>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoText}>Bạn có {cart?.items.length || 0} sản phẩm trong giỏ hàng</Text>
+            </View>
 
-        {cart?.items.map((item) => (
+            <View style={styles.buttonContainer}>
+              <Button
+                title="Tải lại Giỏ hàng"
+                onPress={fetchCart}
+                disabled={loading}
+                color="#4e9eed"
+              />
+            </View>
+          </>
+        }
+        ListFooterComponent={
+          <>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>{cart?.items.length} sản phẩm</Text>
+              <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
+            </View>
+            <TouchableOpacity style={styles.continueButton} onPress={() => navigation.navigate("OrderScreen")}>
+              <Text style={styles.continueText}>Tiếp tục</Text>
+            </TouchableOpacity>
+          </>
+        }
+        renderItem={({ item }) =>
           item.productId ? (
-
-            <View key={item._id} style={styles.productContainer}>
+            <View style={styles.productContainer}>
               <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
               <View style={styles.productDetails}>
-
                 <Text style={styles.productName}>{item.productId.name}</Text>
-
                 <Text style={styles.productSize}>Size {item.size}</Text>
+
+                {/* Nút Xóa (icon X) */}
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => {
+                    const id = setSelectedItem(item._id);
+                    console.log("ID là:", id);
+                    setModalVisible(true);
+                  }}
+                >
+                  <AntDesign name="closecircleo" size={24} color="#c23a41" />
+                </TouchableOpacity>
+
                 <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
 
                 {item.toppings.map((topping) => (
@@ -180,24 +247,35 @@ const CartScreen: React.FC = () => {
                     </TouchableOpacity>
                   </View>
                 </View>
-              </View>
 
+                {/* Modal Xác nhận Xóa */}
+                <Modal visible={modalVisible} transparent animationType="slide">
+                  <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                      <Text style={styles.modalTitle}>Xóa sản phẩm này?</Text>
+                      <View style={styles.modalButtons}>
+                        <Button title="Hủy" onPress={() => setModalVisible(false)} />
+                        <Button
+                          title="OK"
+                          onPress={() => {
+                            if (selectedItem) {
+                              removeFromCart(selectedItem); 
+                            }
+                            setModalVisible(false);
+                          }}
+                          color="red"
+                        />
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+              </View>
             </View>
           ) : (
-            <Text key={item._id} style={{ color: "red" }}>Lỗi: Sản phẩm không tồn tại!</Text> // Hiển thị lỗi
+            <Text style={{ color: "red" }}>Lỗi: Sản phẩm không tồn tại!</Text>
           )
-        ))
         }
-      </ScrollView >
-
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalText}>{cart?.items.length} sản phẩm</Text>
-        <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
-      </View>
-      <TouchableOpacity style={styles.continueButton} onPress={() => navigation.navigate("OrderScreen")}>
-        <Text style={styles.continueText}>Tiếp tục</Text>
-      </TouchableOpacity>
-
+      />
     </View>
   );
 };
@@ -207,6 +285,12 @@ const styles = StyleSheet.create({
     //flex: 1,
     backgroundColor: "#F5F5F5",
     paddingBottom: 100,
+  },
+  buttonContainer: {
+    marginHorizontal: 90,
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 20
   },
   header: {
     fontSize: 18,
@@ -316,7 +400,33 @@ const styles = StyleSheet.create({
   toppingText: {
     fontSize: 14,
     color: "#555",
-  }
+  },
+  deleteButton: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 });
 
 export default CartScreen;

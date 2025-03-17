@@ -5,6 +5,7 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFonts } from 'expo-font';
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Toast from "react-native-toast-message";
 
 interface Topping {
     _id: string;
@@ -104,6 +105,29 @@ const ProductDetailScreen: React.FC = () => {
         console.log("selectedIce:", selectedIce);
         console.log("selectedSweet:", selectedSweet);
 
+        const validIceLevels = ["Không đá", "Ít đá", "Đá bình thường", "Đá riêng"];
+        const validSweetLevels = ["Không ngọt", "Ít ngọt", "Ngọt bình thường", "Nhiều ngọt"];
+
+        if (!validIceLevels.includes(selectedIce)) {
+            Toast.show({
+                type: "info",
+                text1: "Thông báo",
+                text2: "Vui lòng chọn mức đá ❄️",
+                visibilityTime: 4000,
+            });
+            return;
+        }
+        
+        if (!validSweetLevels.includes(selectedSweet)) {
+            Toast.show({
+                type: "info",
+                text1: "Thông báo",
+                text2: "Vui lòng chọn mức đường 🍬",
+                visibilityTime: 4000,
+            });
+            return; 
+        }
+
         try {
             const token = await getAuthToken();
 
@@ -133,17 +157,31 @@ const ProductDetailScreen: React.FC = () => {
             });
 
             if (!response.ok) {
+                Toast.show({
+                    type: "error",
+                    text1: "Lỗi",
+                    text2: "Không thể thêm sản phẩm vào giỏ hàng",
+                    visibilityTime: 4000,
+                });
                 throw new Error(`Lỗi API: ${response.status}`);
             }
+            else {
+                console.log("🚀 Gửi API với dữ liệu:", response);
+                const data = await response.json();
+                //alert("Thêm vào giỏ hàng thành công!");
+                Toast.show({
+                    type: "success",
+                    text1: "Thông báo",
+                    text2: "Thêm vào giỏ hàng thành công!",
+                    position: "top",
+                    visibilityTime: 4000,
+                });
+                console.log("✅ Response:", data);
+            }
 
-            console.log("🚀 Gửi API với dữ liệu:", response);
-
-            const data = await response.json();
-            alert("Thêm vào giỏ hàng thành công!");
-            console.log("✅ Response:", data);
         } catch (error) {
-            console.error("❌ Lỗi khi thêm vào giỏ hàng:", error);
-            alert("Thêm vào giỏ hàng thất bại!");
+            //console.error("❌ Lỗi khi thêm vào giỏ hàng:", error);
+            //alert("Thêm vào giỏ hàng thất bại!");
         }
     }
 

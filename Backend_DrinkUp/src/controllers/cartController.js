@@ -16,10 +16,11 @@ exports.getCart = async (req, res) => {
 
     const cart = await Cart.getCartByUserId(userId);
 
-    if (!cart) {
-      console.log('Không tìm thấy giỏ hàng');
-      return res.status(404).json({ error: 'Không tìm thấy giỏ hàng' });
-    }
+    // if (!cart) {
+    //   console.log('Không tìm thấy giỏ hàng');
+    //   return res.status(404).json({ error: 'Không tìm thấy giỏ hàng' });
+    // }
+
     console.log('Cart data:', cart);  
 
     res.status(200).json(cart);
@@ -161,18 +162,37 @@ exports.addToCart = async (req, res) => {
 // };
 
 exports.removeFromCart = async (req, res) => {
+  const { itemId } = req.params;
+  const userId = req.userId;
+
   try {
-    const { userId, productId, size } = req.body;
-
     let cart = await Cart.findOne({ userId });
-    if (!cart) return res.status(404).json({ error: 'Giỏ hàng không tồn tại' });
+    if(!cart){
+      return res.status(404).json({ message: 'Giỏ hàng không tồn tại'});
+    }      
 
-    cart.items = cart.items.filter(item => !(item.productId.toString() === productId && item.size === size));
+    const objectId = new mongoose.Types.ObjectId(itemId);
 
-    await cart.save();
-    res.json(cart);
+    const itemIndex = cart.items.findIndex(item => item._id.equals(objectId));
+    if(itemIndex === -1){
+      return res.status(404).json({ message: 'Sản phẩm không tồn tại trong giỏ hàng'});
+    }
+
+    //Xóa sản phẩm khỏi giỏ hàng
+    cart.items.splice(itemIndex, 1);
+
+    // Nếu giỏ hàng trống, xóa luôn giỏ hàng
+    if (cart.items.length === 0) {
+      await Cart.deleteOne({ _id: cart._id });
+      return res.status(200).json({ message: 'Giỏ hàng đã được xóa' });
+    } else {
+      await cart.save();
+    }
+
+      res.status(200).json({ message: 'Sản phẩm đã được xóa khỏi giỏ hàng', cart });
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi khi xóa sản phẩm khỏi giỏ hàng' });
+      console.error(error);
+      res.status(500).json({ message: 'Lỗi server' });
   }
 };
 

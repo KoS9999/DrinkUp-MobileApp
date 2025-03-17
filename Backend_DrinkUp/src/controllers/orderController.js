@@ -189,8 +189,8 @@ exports.createOrder = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Lỗi khi tạo đơn hàng:", error);
-    res.status(500).json({ error: "Lỗi khi tạo đơn hàng", details: error.message });
+    console.error("Lỗi khi tạo đơn hàng. Vui lòng chọn phương thức thanh toán:", error);
+    res.status(500).json({ error: "Lỗi khi tạo đơn hàng. Vui lòng chọn phương thức thanh toán", details: error.message });
   }
 };
 

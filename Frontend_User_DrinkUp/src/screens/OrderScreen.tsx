@@ -7,8 +7,10 @@ import { TimePickerModal } from "react-native-paper-dates";
 import { useNavigation } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { TabParamList } from "../navigators/AppNavigator";
+import Toast from "react-native-toast-message";
 
-type NavigationProps = BottomTabNavigationProp<TabParamList, "AccountTab">; 
+
+type NavigationProps = BottomTabNavigationProp<TabParamList, "AccountTab">;
 const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
 };
@@ -33,10 +35,10 @@ type CartItem = {
   _id: string;
   productId: Product;
   quantity: number;
-  size: "S" | "M" | "L"; 
-  iceLevel: string; 
-  sweetLevel: string; 
-  toppings: Topping[]; 
+  size: "S" | "M" | "L";
+  iceLevel: string;
+  sweetLevel: string;
+  toppings: Topping[];
 };
 
 
@@ -67,47 +69,47 @@ const OrderScreen: React.FC = () => {
   }, [originalTotalPrice, discountPrice]);
 
   const fetchCart = async () => {
-  try {
-    const token = await getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/cart`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      credentials: "include",
-    });
-    
-    const data = await response.json();
-    console.log("API Response (OrderScreen):", data);
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/cart`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
 
-    if (response.ok) {
-      const items: CartItem[] = data.items?.map((item: any) => ({
-        _id: item._id,
-        productId: item.productId, 
-        quantity: item.quantity,
-        size: item.size,
-        iceLevel: item.iceLevel, 
-        sweetLevel: item.sweetLevel, 
-        toppings: item.toppings || [],
-      })) || [];
+      const data = await response.json();
+      console.log("API Response (OrderScreen):", data);
 
-      setCart(items);
+      if (response.ok) {
+        const items: CartItem[] = data.items?.map((item: any) => ({
+          _id: item._id,
+          productId: item.productId,
+          quantity: item.quantity,
+          size: item.size,
+          iceLevel: item.iceLevel,
+          sweetLevel: item.sweetLevel,
+          toppings: item.toppings || [],
+        })) || [];
 
-      const total = items.reduce((sum: number, item: CartItem) => {
-        const basePrice = item.productId?.price?.[item.size] || 0;
-        const toppingPrice = item.toppings.reduce((tSum, topping) => tSum + (topping.toppingId?.price || 0) * topping.quantity, 0);
-        return sum + (basePrice + toppingPrice) * item.quantity;
-      }, 0);
-      
-      setOriginalTotalPrice(total);
-    } else {
-      console.error("Lỗi khi lấy giỏ hàng:", data.error);
+        setCart(items);
+
+        const total = items.reduce((sum: number, item: CartItem) => {
+          const basePrice = item.productId?.price?.[item.size] || 0;
+          const toppingPrice = item.toppings.reduce((tSum, topping) => tSum + (topping.toppingId?.price || 0) * topping.quantity, 0);
+          return sum + (basePrice + toppingPrice) * item.quantity;
+        }, 0);
+
+        setOriginalTotalPrice(total);
+      } else {
+        console.error("Lỗi khi lấy giỏ hàng:", data.error);
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy giỏ hàng:", error);
     }
-  } catch (error) {
-    console.error("Lỗi khi lấy giỏ hàng:", error);
-  }
-};
+  };
 
 
   const fetchBranches = async () => {
@@ -166,7 +168,7 @@ const OrderScreen: React.FC = () => {
   const placeOrder = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
-  
+
       const orderData = {
         orderType: deliveryMethod,
         branchId: deliveryMethod === "pickup" ? selectedBranch?._id : null,
@@ -178,7 +180,7 @@ const OrderScreen: React.FC = () => {
           productId: item.productId._id,
           quantity: item.quantity,
           size: item.size,
-          iceLevel: item.iceLevel, 
+          iceLevel: item.iceLevel,
           sweetLevel: item.sweetLevel,
           toppings: item.toppings.map((t) => ({
             toppingId: t.toppingId._id,
@@ -188,10 +190,9 @@ const OrderScreen: React.FC = () => {
           })),
         })),
       };
-      
-  
+
       console.log("Gửi request đặt hàng:", orderData);
-  
+
       const response = await fetch(`${API_BASE_URL}/order/create/cod`, {
         method: "POST",
         headers: {
@@ -200,38 +201,58 @@ const OrderScreen: React.FC = () => {
         },
         body: JSON.stringify(orderData),
       });
-  
+
       const text = await response.text();
       console.log("API Response:", text);
-  
+
       try {
         const data = JSON.parse(text);
         if (response.ok) {
-          alert("Đặt hàng thành công!\nMã đơn hàng: " + data.order._id);
+          Toast.show({
+            type: "success",
+            text1: "Đặt hàng thành công",
+            text2: `Mã đơn hàng: ${data.order._id}`,
+            visibilityTime: 4000,
+          });
+
           // Xóa giỏ hàng trên client
           setCart([]);
-        
-          navigation.navigate("AccountTab");  
+          navigation.navigate("AccountTab");
         } else {
-          alert(`Lỗi: ${data.error || "Có lỗi xảy ra khi đặt hàng."}`);
+          Toast.show({
+            type: "error",
+            text1: "Lỗi đặt hàng",
+            text2: data.error || "Có lỗi xảy ra khi đặt hàng.",
+            visibilityTime: 4000,
+          });
         }
       } catch (jsonError) {
         console.error("Lỗi JSON Parse:", jsonError);
-        alert("Lỗi khi xử lý dữ liệu từ server. Vui lòng thử lại!");
+        Toast.show({
+          type: "error",
+          text1: "Lỗi dữ liệu",
+          text2: "Lỗi khi xử lý dữ liệu từ server. Vui lòng thử lại!",
+          visibilityTime: 4000,
+        });
       }
     } catch (error) {
       console.error("Lỗi khi đặt hàng:", error);
-      alert("Không thể tạo đơn hàng. Vui lòng kiểm tra kết nối mạng!");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi kết nối",
+        text2: "Không thể tạo đơn hàng. Vui lòng kiểm tra kết nối mạng!",
+        visibilityTime: 4000,
+      });
     }
   };
-  
+
   const onRefresh = async () => {
-    setRefreshing(true); 
-    await fetchCart(); 
-    await fetchBranches(); 
-    setRefreshing(false); 
+    setRefreshing(true);
+    await fetchCart();
+    await fetchBranches();
+    setRefreshing(false);
   };
-  
+
 
   return (
     <FlatList
@@ -239,7 +260,7 @@ const OrderScreen: React.FC = () => {
       keyExtractor={(item) => item}
       contentContainerStyle={styles.listContainer}
       keyboardShouldPersistTaps="handled"
-      refreshing={refreshing} 
+      refreshing={refreshing}
       onRefresh={onRefresh}
       renderItem={() => (
         <>
@@ -336,16 +357,16 @@ const OrderScreen: React.FC = () => {
                   </View>
                 );
               })
-                    ) : (
-                      <Text>Giỏ hàng trống</Text>
-                    )}
+            ) : (
+              <Text>Giỏ hàng trống</Text>
+            )}
 
-          {/* Tổng tiền đơn hàng */}
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>Tổng cộng</Text>
-            <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
+            {/* Tổng tiền đơn hàng */}
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>Tổng cộng</Text>
+              <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
+            </View>
           </View>
-        </View>
 
           {/* Khuyến mãi */}
           <View style={styles.section}>
@@ -377,32 +398,32 @@ const OrderScreen: React.FC = () => {
           </View>
           {/* Phương thức thanh toán */}
           <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
-              {["COD", "Ví ZaloPay"].map((method, index) => (
-                <TouchableOpacity key={index} style={styles.radioButton} onPress={() => setSelectedPayment(method)}>
-                  <RadioButton.Android
-                    value={method}
-                    status={selectedPayment === method ? "checked" : "unchecked"}
-                    onPress={() => setSelectedPayment(method)}
-                  />
-                  <Text style={styles.radioLabel}>{method}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
+            {["COD", "Ví ZaloPay"].map((method, index) => (
+              <TouchableOpacity key={index} style={styles.radioButton} onPress={() => setSelectedPayment(method)}>
+                <RadioButton.Android
+                  value={method}
+                  status={selectedPayment === method ? "checked" : "unchecked"}
+                  onPress={() => setSelectedPayment(method)}
+                />
+                <Text style={styles.radioLabel}>{method}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           {/* Tổng cộng tiền và ghi chú */}
           <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tổng cộng</Text>
-              <View style={styles.totalContainer}>
-                <Text style={styles.totalText}>Thành tiền</Text>
-                <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ghi chú cho đơn hàng..."
-                  value={note}
-                  onChangeText={setNote}
-                />
+            <Text style={styles.sectionTitle}>Tổng cộng</Text>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalText}>Thành tiền</Text>
+              <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
             </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Ghi chú cho đơn hàng..."
+              value={note}
+              onChangeText={setNote}
+            />
+          </View>
 
           {/* Nút đặt hàng */}
           <TouchableOpacity style={styles.orderButton} onPress={placeOrder}>
@@ -416,8 +437,8 @@ const OrderScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   listContainer: {
-    paddingTop: 50, 
-    paddingBottom: 100, 
+    paddingTop: 50,
+    paddingBottom: 100,
     paddingHorizontal: 15,
     backgroundColor: "#F8F8F8",
   },
@@ -426,13 +447,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F8F8",
     padding: 15,
   },
-  
+
   scrollView: {
-    paddingTop: 55,  
-    paddingBottom: 125, 
-    paddingHorizontal: 15, 
+    paddingTop: 55,
+    paddingBottom: 125,
+    paddingHorizontal: 15,
   },
-  
+
   section: {
     backgroundColor: "#FFF",
     padding: 15,
@@ -492,6 +513,7 @@ const styles = StyleSheet.create({
   orderItem: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 20
   },
   productImage: {
     width: 80,
