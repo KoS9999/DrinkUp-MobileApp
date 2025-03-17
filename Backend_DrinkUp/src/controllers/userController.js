@@ -2,6 +2,7 @@ const User = require('../models/User');
 const OTP = require('../models/OTP');
 const Order = require('../models/Order');
 const OrderDetail = require('../models/OrderDetail');
+const Review = require('../models/Review');
 const OTPService = require('../services/emailService');
 const { uploadImageToFirebase } = require('../services/firebaseService');
 const bcrypt = require('bcrypt');
@@ -272,4 +273,47 @@ exports.handleCancelOrder = async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
+
+exports.createReview = async (req, res) => {
+  try {
+      const { userId, productId, rating, reviewText } = req.body;
+      const { orderDetailId } = req.params; 
+
+      const orderDetail = await OrderDetail.findOne({ _id: orderDetailId, user: userId, product: productId });
+      if (!orderDetail) {
+          return res.status(400).json({ message: "Order detail not found or doesn't belong to this user." });
+      }
+
+      const existingReview = await Review.findOne({ user: userId, product: productId, orderDetail: orderDetailId });
+      if (existingReview) {
+          return res.status(400).json({ message: "You have already reviewed this product for this order." });
+      }
+
+      const previousPurchase = await OrderDetail.findOne({ user: userId, product: productId });
+      if (!previousPurchase) {
+          return res.status(400).json({ message: "You must have purchased this product before in order to review it." });
+      }
+
+      const newReview = new Review({
+          user: userId,
+          product: productId,
+          orderDetail: orderDetailId,
+          rating,
+          reviewText,
+      });
+      await newReview.save();
+
+      const user = await User.findById(userId);
+      if (user) {
+          user.points += 1000; 
+          await user.save();
+      }
+
+      res.status(201).json({ message: "Review submitted successfully!", review: newReview });
+  } catch (error) {
+      res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 
