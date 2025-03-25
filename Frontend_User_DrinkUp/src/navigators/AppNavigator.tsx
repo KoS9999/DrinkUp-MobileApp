@@ -3,7 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
-import {CartProvider} from '../components/CartContext';
+import { CartProvider } from '../components/CartContext';
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
@@ -42,7 +42,26 @@ export type RootStackParamList = {
   OrderHistoryScreen: undefined;
   OrderDetailScreen: { orderId: string };
   SearchScreen: undefined;
-  ProductDetailScreen: { productId: string};
+
+  ProductDetailScreen: { productId: string };
+
+  // ProductDetailScreen: {
+  //   productId: string;
+  //   cartItem?: {
+  //     size: "S" | "M" | "L";
+  //     iceLevel: string;
+  //     sweetLevel: string;
+  //     toppings: {
+  //       _id: string;
+  //       toppingId: { name: string; price: number };
+  //       quantity: number;
+  //     }[];
+  //     quantity: number;
+  //     cartItemId: string;
+  //   };
+  //   isEditing?: boolean;
+  // };
+
   CartScreen: undefined;
   OrderScreen: undefined;
 };
@@ -79,7 +98,7 @@ const AccountStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AccountScreen" component={AccountScreen} />
       <Stack.Screen name="UpdateProfileScreen" component={UpdateProfileStack} />
-      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} /> 
+      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetailScreen" component={OrderDetailScreen} />
     </Stack.Navigator>
   );

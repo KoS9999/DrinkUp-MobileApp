@@ -187,13 +187,21 @@ exports.updateCartItemQuantity = async (req, res) => {
     console.log("item._id: ", objectId);
 
     // Cập nhật số lượng của sản phẩm
-    const itemIndex = cart.items.findIndex((item) => item._id.toString() === objectId.toString());
+    const itemIndex = cart.items.findIndex(item => item._id.equals(objectId));
     console.log("itemIndex: ", itemIndex);
 
     if (itemIndex === -1) {
       console.warn("⚠️ Không tìm thấy sản phẩm trong giỏ hàng!");
-      return res.status(404).json({ message: "Không tìm thấy sản phẩm trong giỏ hàng!" });
+      return res.status(404).json({ message: 'Sản phẩm không tồn tại trong giỏ hàng' });
     }
+
+    // const itemIndex = cart.items.findIndex(item => item._id.equals(objectId));
+    
+
+    // if (itemIndex === -1) {
+    //   console.warn("⚠️ Không tìm thấy sản phẩm trong giỏ hàng!");
+    //   return res.status(404).json({ message: "Không tìm thấy sản phẩm trong giỏ hàng!" });
+    // }
   
     cart.items[itemIndex].quantity = quantity;
     await cart.save();

@@ -163,6 +163,31 @@ const CartScreen: React.FC = () => {
     }
   };
 
+  const updateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return; // Không cho giảm xuống 0
+
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/cart/update-quantity/${itemId}`, {
+        method: "PATCH",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ quantity: newQuantity }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Không thể cập nhật số lượng sản phẩm");
+      }
+
+      fetchCart(); // Cập nhật lại giỏ hàng sau khi thay đổi số lượng
+    } catch (error) {
+      console.error("Lỗi khi cập nhật số lượng:", error);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchCart();
@@ -218,6 +243,24 @@ const CartScreen: React.FC = () => {
             <View style={styles.productContainer}>
               <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
               <View style={styles.productDetails}>
+
+                {/* <TouchableOpacity
+                  onPress={() => navigation.navigate("ProductDetailScreen", {
+                    productId: item.productId._id, // ✅ Chỉ truyền ID của sản phẩm
+                    cartItem: { // ✅ Truyền thêm các tùy chọn đã chọn
+                      size: item.size,
+                      iceLevel: item.iceLevel,
+                      sweetLevel: item.sweetLevel,
+                      toppings: item.toppings,
+                      quantity: item.quantity,
+                      cartItemId: item._id, // ID của item trong giỏ hàng để cập nhật
+                    },
+                    isEditing: true, // ✅ Đánh dấu là đang chỉnh sửa
+                  })}
+                >
+                  <Text style={styles.productName}>{item.productId.name}</Text>
+                </TouchableOpacity> */}
+
                 <Text style={styles.productName}>{item.productId.name}</Text>
                 <Text style={styles.productSize}>Size {item.size}</Text>
 
@@ -248,12 +291,13 @@ const CartScreen: React.FC = () => {
                   <Text style={styles.productPrice}>
                     {((item.productId.price[item.size] + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)) * item.quantity).toLocaleString("vi-VN")}đ
                   </Text>
+
                   <View style={styles.quantityControl}>
-                    <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                    <TouchableOpacity onPress={() => updateQuantity(item._id, item.quantity - 1)}>
                       <AntDesign name="minuscircleo" size={24} color="black" />
                     </TouchableOpacity>
                     <Text style={styles.quantityText}>{item.quantity}</Text>
-                    <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                    <TouchableOpacity onPress={() => updateQuantity(item._id, item.quantity + 1)}>
                       <AntDesign name="pluscircleo" size={24} color="black" />
                     </TouchableOpacity>
                   </View>
