@@ -140,12 +140,23 @@ const CartScreen: React.FC = () => {
 
   const removeFromCart = async (itemId: string) => {
     try {
-      //await fetch(`API_URL/cart/remove`, {
-      await fetch(`${API_BASE_URL}/cart/remove`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId }),
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/cart/remove/${itemId}`, {
+        method: "DELETE",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
       });
+
+      const data = await response.json();
+      console.log("Kết quả API:", data);
+
+      if (!response.ok) {
+        throw new Error(`Lỗi API: ${data.message || "Không thể xóa sản phẩm"}`);
+      }
+
       fetchCart(); // Tải lại giỏ hàng sau khi xóa
     } catch (error) {
       console.error("Lỗi khi xóa sản phẩm:", error);
@@ -214,8 +225,8 @@ const CartScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => {
-                    const id = setSelectedItem(item._id);
-                    console.log("ID là:", id);
+                    setSelectedItem(item._id);
+                    console.log("ID là:", item._id);
                     setModalVisible(true);
                   }}
                 >
@@ -259,7 +270,7 @@ const CartScreen: React.FC = () => {
                           title="OK"
                           onPress={() => {
                             if (selectedItem) {
-                              removeFromCart(selectedItem); 
+                              removeFromCart(selectedItem);
                             }
                             setModalVisible(false);
                           }}
