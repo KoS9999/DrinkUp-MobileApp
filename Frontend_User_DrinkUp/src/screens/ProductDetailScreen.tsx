@@ -89,7 +89,7 @@ const ProductDetailScreen: React.FC = () => {
     const [selectedTopping, setSelectedTopping] = useState<
         { id: string; name: string; quantity: number }[]
     >(cartItem?.toppings?.map(t => ({
-        id: t._id, //id của item topping chứ không phải của topping
+        id: t.toppingId._id, 
         name: t.toppingId.name,
         quantity: t.quantity
     })) ?? []);

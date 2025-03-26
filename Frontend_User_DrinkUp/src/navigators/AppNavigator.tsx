@@ -50,9 +50,8 @@ export type RootStackParamList = {
       size: "S" | "M" | "L";
       iceLevel: "Không đá" | "Ít đá" | "Đá bình thường" | "Đá riêng";
       sweetLevel: "Không ngọt" | "Ít ngọt" | "Ngọt bình thường" | "Nhiều ngọt"
-      toppings: {
-        _id: string; 
-        toppingId: { name: string; price: number };
+      toppings: { 
+        toppingId: { _id: string; name: string; price: number };
         quantity: number;
       }[];
       quantity: number;

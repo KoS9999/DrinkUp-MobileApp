@@ -250,9 +250,9 @@ const CartScreen: React.FC = () => {
                   size: item.size,
                   iceLevel: item.iceLevel,
                   sweetLevel: item.sweetLevel,
-                  toppings: item.toppings.map((topping) => ({
-                    _id: topping._id, 
+                  toppings: item.toppings.map((topping) => ({ 
                     toppingId: { 
+                      _id: topping.toppingId._id,
                       name: topping.toppingId.name, 
                       price: topping.toppingId.price 
                     }, 
@@ -271,8 +271,8 @@ const CartScreen: React.FC = () => {
                   iceLevel: item.iceLevel,
                   sweetLevel: item.sweetLevel,
                   toppings: item.toppings.map((topping) => ({
-                    _id: topping._id,
                     toppingId: {  
+                      _id: topping.toppingId._id,
                       name: topping.toppingId.name, 
                       price: topping.toppingId.price 
                     }, 
