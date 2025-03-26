@@ -16,12 +16,14 @@ const CartSchema = new mongoose.Schema({
       iceLevel: { 
         type: String,
         enum: ['Không đá', 'Ít đá', 'Đá bình thường', 'Đá riêng'],
-        default: 'Đá bình thường'
+        required: true
+        //default: 'Đá bình thường'
       },
       sweetLevel: { 
         type: String,
         enum: ['Không ngọt', 'Ít ngọt', 'Ngọt bình thường', 'Nhiều ngọt'],
-        default: 'Ngọt bình thường'
+        required: true
+        //default: 'Ngọt bình thường'
       }
     }
   ],
@@ -30,8 +32,8 @@ const CartSchema = new mongoose.Schema({
 
 CartSchema.statics.getCartByUserId = async function (userId) {
   return await this.findOne({ userId })
-    .populate('items.productId', 'name imageUrl price')
-    .populate('items.toppings.toppingId', 'name price')
+    .populate('items.productId', '_id name imageUrl price')
+    .populate('items.toppings.toppingId', '_id name price')
     .exec();
 };
 

@@ -6,7 +6,8 @@ import { useFonts } from 'expo-font';
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
-
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigators/AppNavigator';
 interface Topping {
     _id: string;
     name: string;
@@ -25,7 +26,26 @@ interface Product {
 
 interface RouteParams {
     productId: string;
+    cartItem: {
+        size: "S" | "M" | "L";
+        iceLevel: "Không đá" | "Ít đá" | "Đá bình thường" | "Đá riêng";
+        sweetLevel: "Không ngọt" | "Ít ngọt" | "Ngọt bình thường" | "Nhiều ngọt";
+        toppings: {
+            _id: string;
+            toppingId: {
+                _id: string
+                name: string;
+                price: number;
+            };
+            quantity: number;
+        }[];
+        quantity: number;
+        cartItemId: string; // ID của item trong giỏ hàng
+    };
+    isEditing: boolean;
 }
+
+type ProductDetailRouteProp = StackNavigationProp<RootStackParamList, "ProductDetailScreen">;
 
 const getAuthToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
@@ -39,18 +59,48 @@ const getAuthToken = async () => {
 const ProductDetailScreen: React.FC = () => {
     const route = useRoute();
     const navigation = useNavigation();
-    const { productId } = route.params as RouteParams;
+    const { productId, cartItem, isEditing } = route.params as RouteParams;
+
+    //console.log("Received cartItem:", cartItem);
+
+    // console.log("Product ID:", productId);
+    // console.log("Cart Item:", cartItem);
+    // console.log("Is Editing:", isEditing);
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
-    const [quantity, setQuantity] = useState<number>(product?.quantity ?? 1);
 
-    const [selectedSize, setSelectedSize] = useState("S");
-    const [selectedSweet, setSelectedSweet] = useState<string>("Ngọt bình thường");
-    const [selectedIce, setSelectedIce] = useState<string>("Đá bình thường");
+    const [selectedSize, setSelectedSize] = useState<string>(
+        cartItem?.size ?? "S"
+    );
 
-    // const [selectedTopping, setSelectedTopping] = useState<{ [key: number]: number }>({});
-    const [selectedTopping, setSelectedTopping] = useState<{ id: string, name: string, quantity: number }[]>([]);
+    const [selectedSweet, setSelectedSweet] = useState<string>(
+        cartItem?.sweetLevel ?? "Ngọt bình thường"
+    );
+
+    const [selectedIce, setSelectedIce] = useState<string>(
+        cartItem?.iceLevel ?? "Đá bình thường"
+    );
+
+    const [quantity, setQuantity] = useState<number>(
+        cartItem?.quantity ?? product?.quantity ?? 1
+    );
+
+    const [selectedTopping, setSelectedTopping] = useState<
+        { id: string; name: string; quantity: number }[]
+    >(cartItem?.toppings?.map(t => ({
+        id: t._id, //id của item topping chứ không phải của topping
+        name: t.toppingId.name,
+        quantity: t.quantity
+    })) ?? []);
+
+    console.log("selectedSize:", selectedSize);
+    console.log("selectedSweet:", selectedSweet);
+    console.log("selectedIce:", selectedIce);
+    console.log("SL:", quantity)
+    console.log("Toppings:", selectedTopping)
+
+
 
     const [totalPrice, setTotalPrice] = useState<number>(0);
 
@@ -117,7 +167,7 @@ const ProductDetailScreen: React.FC = () => {
             });
             return;
         }
-        
+
         if (!validSweetLevels.includes(selectedSweet)) {
             Toast.show({
                 type: "info",
@@ -125,7 +175,7 @@ const ProductDetailScreen: React.FC = () => {
                 text2: "Vui lòng chọn mức đường 🍬",
                 visibilityTime: 4000,
             });
-            return; 
+            return;
         }
 
         try {
@@ -194,8 +244,8 @@ const ProductDetailScreen: React.FC = () => {
 
                 if (data?.success) {
                     setProduct(data.product);
-                    setSelectedSweet(data.sweetLevels);
-                    setSelectedIce(data.iceLevels);
+                    // setSelectedSweet(data.sweetLevels);
+                    // setSelectedIce(data.iceLevels);
                     console.log("Received productId:", productId);
                 }
             })
@@ -315,18 +365,20 @@ const ProductDetailScreen: React.FC = () => {
                     {product.toppings.map((topping) => {
                         const existingTopping = selectedTopping.find(item => item.id === topping._id);
                         const quantity = existingTopping ? existingTopping.quantity : 0;
+                        console.log("Topping ID:", topping._id);
+                        console.log("Existing Topping IDs:", selectedTopping.map(t => t.id));
 
                         return (
                             <TouchableOpacity key={topping._id} style={styles.toppingRow}>
                                 <View style={styles.iconContainer}>
-                                    {quantity > 0 ? (
+                                    {quantity > 0 && (
                                         <>
                                             <TouchableOpacity onPress={() => handleToppingRemove(topping)}>
                                                 <AntDesign name="minus" size={18} color="#0A1858" />
                                             </TouchableOpacity>
                                             <Text style={styles.quantityText}>{quantity}</Text>
                                         </>
-                                    ) : null}
+                                    )}
                                     <TouchableOpacity onPress={() => handleToppingPress(topping)}>
                                         <AntDesign name="plus" size={18} color="#0A1858" />
                                     </TouchableOpacity>
@@ -350,8 +402,8 @@ const ProductDetailScreen: React.FC = () => {
                             </TouchableOpacity>
                         );
                     })}
-
                 </View>
+
             </ScrollView>
 
             <View style={styles.quantityContainer}>
@@ -378,7 +430,7 @@ const ProductDetailScreen: React.FC = () => {
 
             <View style={styles.quantityContainer}>
                 <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-                    <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
+                    <Text style={styles.addToCartText}>{isEditing ? "Cập nhật món" : "Thêm vào giỏ hàng"}   </Text>
                 </TouchableOpacity>
             </View>
         </View>

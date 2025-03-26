@@ -14,6 +14,7 @@ import { FlatList } from "react-native";
 type Product = {
   _id: string;
   productId: {
+    _id: string;
     name: string;
     price: { S: number; M: number; L: number };
     imageUrl: string;
@@ -23,13 +24,14 @@ type Product = {
   toppings: {
     _id: string;
     toppingId: {
+      _id: string;
       name: string;
       price: number;
     };
     quantity: number;
   }[];
-  iceLevel: string;
-  sweetLevel: string;
+  iceLevel: "Không đá" | "Ít đá" | "Đá bình thường" | "Đá riêng";
+  sweetLevel: "Không ngọt" | "Ít ngọt" | "Ngọt bình thường" | "Nhiều ngọt";
 };
 
 type CartData = {
@@ -240,92 +242,121 @@ const CartScreen: React.FC = () => {
         }
         renderItem={({ item }) =>
           item.productId ? (
-            <View style={styles.productContainer}>
-              <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
-              <View style={styles.productDetails}>
+            <TouchableOpacity
+            onPress={() => {
+              console.log("Navigating with:", JSON.stringify({
+                productId: item.productId._id,
+                cartItem: {
+                  size: item.size,
+                  iceLevel: item.iceLevel,
+                  sweetLevel: item.sweetLevel,
+                  toppings: item.toppings.map((topping) => ({
+                    _id: topping._id, 
+                    toppingId: { 
+                      name: topping.toppingId.name, 
+                      price: topping.toppingId.price 
+                    }, 
+                    quantity: topping.quantity 
+                  })),
+                  quantity: item.quantity,
+                  cartItemId: item._id,
+                },
+                isEditing: true,
+              }, null, 2));
+                   
+                navigation.navigate("ProductDetailScreen", {
+                productId: item.productId._id,
+                cartItem: {
+                  size: item.size,
+                  iceLevel: item.iceLevel,
+                  sweetLevel: item.sweetLevel,
+                  toppings: item.toppings.map((topping) => ({
+                    _id: topping._id,
+                    toppingId: {  
+                      name: topping.toppingId.name, 
+                      price: topping.toppingId.price 
+                    }, 
+                    quantity: topping.quantity 
+                  })),
+                  quantity: item.quantity,
+                  cartItemId: item._id, // ID của item trong giỏ hàng để cập nhật
+                },
+                isEditing: true, // ✅ Đánh dấu là đang chỉnh sửa
+              });
+            }}
+            >
+              <View style={styles.productContainer}>
+                <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
+                <View style={styles.productDetails}>
 
-                {/* <TouchableOpacity
-                  onPress={() => navigation.navigate("ProductDetailScreen", {
-                    productId: item.productId._id, // ✅ Chỉ truyền ID của sản phẩm
-                    cartItem: { // ✅ Truyền thêm các tùy chọn đã chọn
-                      size: item.size,
-                      iceLevel: item.iceLevel,
-                      sweetLevel: item.sweetLevel,
-                      toppings: item.toppings,
-                      quantity: item.quantity,
-                      cartItemId: item._id, // ID của item trong giỏ hàng để cập nhật
-                    },
-                    isEditing: true, // ✅ Đánh dấu là đang chỉnh sửa
-                  })}
-                >
+
                   <Text style={styles.productName}>{item.productId.name}</Text>
-                </TouchableOpacity> */}
+                  <Text style={styles.productSize}>Size {item.size}</Text>
 
-                <Text style={styles.productName}>{item.productId.name}</Text>
-                <Text style={styles.productSize}>Size {item.size}</Text>
+                  {/* Nút Xóa (icon X) */}
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => {
+                      setSelectedItem(item._id);
+                      console.log("ID là:", item._id);
+                      setModalVisible(true);
+                    }}
+                  >
+                    <AntDesign name="closecircleo" size={24} color="#c23a41" />
+                  </TouchableOpacity>
 
-                {/* Nút Xóa (icon X) */}
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => {
-                    setSelectedItem(item._id);
-                    console.log("ID là:", item._id);
-                    setModalVisible(true);
-                  }}
-                >
-                  <AntDesign name="closecircleo" size={24} color="#c23a41" />
-                </TouchableOpacity>
+                  <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
 
-                <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
+                  {item.toppings.map((topping) => (
+                    <View key={topping._id} style={styles.toppingContainer}>
+                      <Text style={styles.toppingText}>
+                        + {topping.toppingId.name} ({topping.toppingId.price.toLocaleString("vi-VN")}đ) x{topping.quantity}
+                      </Text>
+                    </View>
+                  ))}
 
-                {item.toppings.map((topping) => (
-                  <View key={topping._id} style={styles.toppingContainer}>
-                    <Text style={styles.toppingText}>
-                      + {topping.toppingId.name} ({topping.toppingId.price.toLocaleString("vi-VN")}đ) x{topping.quantity}
+                  <View style={{ flex: 1 }} />
+                  <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
+                    <Text style={styles.productPrice}>
+                      {((item.productId.price[item.size] + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)) * item.quantity).toLocaleString("vi-VN")}đ
                     </Text>
-                  </View>
-                ))}
 
-                <View style={{ flex: 1 }} />
-                <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
-                  <Text style={styles.productPrice}>
-                    {((item.productId.price[item.size] + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)) * item.quantity).toLocaleString("vi-VN")}đ
-                  </Text>
-
-                  <View style={styles.quantityControl}>
-                    <TouchableOpacity onPress={() => updateQuantity(item._id, item.quantity - 1)}>
-                      <AntDesign name="minuscircleo" size={24} color="black" />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityText}>{item.quantity}</Text>
-                    <TouchableOpacity onPress={() => updateQuantity(item._id, item.quantity + 1)}>
-                      <AntDesign name="pluscircleo" size={24} color="black" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Modal Xác nhận Xóa */}
-                <Modal visible={modalVisible} transparent animationType="slide">
-                  <View style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                      <Text style={styles.modalTitle}>Xóa sản phẩm này?</Text>
-                      <View style={styles.modalButtons}>
-                        <Button title="Hủy" onPress={() => setModalVisible(false)} />
-                        <Button
-                          title="OK"
-                          onPress={() => {
-                            if (selectedItem) {
-                              removeFromCart(selectedItem);
-                            }
-                            setModalVisible(false);
-                          }}
-                          color="red"
-                        />
-                      </View>
+                    <View style={styles.quantityControl}>
+                      <TouchableOpacity onPress={() => updateQuantity(item._id, item.quantity - 1)}>
+                        <AntDesign name="minuscircleo" size={24} color="black" />
+                      </TouchableOpacity>
+                      <Text style={styles.quantityText}>{item.quantity}</Text>
+                      <TouchableOpacity onPress={() => updateQuantity(item._id, item.quantity + 1)}>
+                        <AntDesign name="pluscircleo" size={24} color="black" />
+                      </TouchableOpacity>
                     </View>
                   </View>
-                </Modal>
+
+                  {/* Modal Xác nhận Xóa */}
+                  <Modal visible={modalVisible} transparent animationType="slide">
+                    <View style={styles.modalContainer}>
+                      <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Xóa sản phẩm này?</Text>
+                        <View style={styles.modalButtons}>
+                          <Button title="Hủy" onPress={() => setModalVisible(false)} />
+                          <Button
+                            title="OK"
+                            onPress={() => {
+                              if (selectedItem) {
+                                removeFromCart(selectedItem);
+                              }
+                              setModalVisible(false);
+                            }}
+                            color="red"
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  </Modal>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
+
           ) : (
             <Text style={{ color: "red" }}>Lỗi: Sản phẩm không tồn tại!</Text>
           )

@@ -43,24 +43,23 @@ export type RootStackParamList = {
   OrderDetailScreen: { orderId: string };
   SearchScreen: undefined;
 
-  ProductDetailScreen: { productId: string };
-
-  // ProductDetailScreen: {
-  //   productId: string;
-  //   cartItem?: {
-  //     size: "S" | "M" | "L";
-  //     iceLevel: string;
-  //     sweetLevel: string;
-  //     toppings: {
-  //       _id: string;
-  //       toppingId: { name: string; price: number };
-  //       quantity: number;
-  //     }[];
-  //     quantity: number;
-  //     cartItemId: string;
-  //   };
-  //   isEditing?: boolean;
-  // };
+  // ProductDetailScreen: { productId: string };
+  ProductDetailScreen: {
+    productId: string;
+    cartItem?: {
+      size: "S" | "M" | "L";
+      iceLevel: "Không đá" | "Ít đá" | "Đá bình thường" | "Đá riêng";
+      sweetLevel: "Không ngọt" | "Ít ngọt" | "Ngọt bình thường" | "Nhiều ngọt"
+      toppings: {
+        _id: string; 
+        toppingId: { name: string; price: number };
+        quantity: number;
+      }[];
+      quantity: number;
+      cartItemId: string;
+    };
+    isEditing?: boolean;
+  };
 
   CartScreen: undefined;
   OrderScreen: undefined;
