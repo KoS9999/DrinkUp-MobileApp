@@ -243,47 +243,49 @@ const CartScreen: React.FC = () => {
         renderItem={({ item }) =>
           item.productId ? (
             <TouchableOpacity
-            onPress={() => {
-              console.log("Navigating with:", JSON.stringify({
-                productId: item.productId._id,
-                cartItem: {
-                  size: item.size,
-                  iceLevel: item.iceLevel,
-                  sweetLevel: item.sweetLevel,
-                  toppings: item.toppings.map((topping) => ({ 
-                    toppingId: { 
-                      _id: topping.toppingId._id,
-                      name: topping.toppingId.name, 
-                      price: topping.toppingId.price 
-                    }, 
-                    quantity: topping.quantity 
-                  })),
-                  quantity: item.quantity,
-                  cartItemId: item._id,
-                },
-                isEditing: true,
-              }, null, 2));
-                   
+              onPress={() => {
+                console.log("Navigating with:", JSON.stringify({
+                  productId: item.productId._id,
+                  cartItem: {
+                    size: item.size,
+                    iceLevel: item.iceLevel,
+                    sweetLevel: item.sweetLevel,
+                    toppings: item.toppings.map((topping) => ({
+                      toppingId: {
+                        _id: topping.toppingId._id,
+                        name: topping.toppingId.name,
+                        price: topping.toppingId.price
+                      },
+                      _id: topping._id,
+                      quantity: topping.quantity
+                    })),
+                    quantity: item.quantity,
+                    cartItemId: item._id,
+                  },
+                  isEditing: true,
+                }, null, 2));
+
                 navigation.navigate("ProductDetailScreen", {
-                productId: item.productId._id,
-                cartItem: {
-                  size: item.size,
-                  iceLevel: item.iceLevel,
-                  sweetLevel: item.sweetLevel,
-                  toppings: item.toppings.map((topping) => ({
-                    toppingId: {  
-                      _id: topping.toppingId._id,
-                      name: topping.toppingId.name, 
-                      price: topping.toppingId.price 
-                    }, 
-                    quantity: topping.quantity 
-                  })),
-                  quantity: item.quantity,
-                  cartItemId: item._id, // ID của item trong giỏ hàng để cập nhật
-                },
-                isEditing: true, // ✅ Đánh dấu là đang chỉnh sửa
-              });
-            }}
+                  productId: item.productId._id,
+                  cartItem: {
+                    size: item.size,
+                    iceLevel: item.iceLevel,
+                    sweetLevel: item.sweetLevel,
+                    toppings: item.toppings.map((topping) => ({
+                      toppingId: {
+                        _id: topping.toppingId._id,
+                        name: topping.toppingId.name,
+                        price: topping.toppingId.price
+                      },
+                      _id: topping._id,
+                      quantity: topping.quantity
+                    })),
+                    quantity: item.quantity,
+                    cartItemId: item._id, // ID của item trong giỏ hàng để cập nhật
+                  },
+                  isEditing: true, // ✅ Đánh dấu là đang chỉnh sửa
+                });
+              }}
             >
               <View style={styles.productContainer}>
                 <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
@@ -307,11 +309,15 @@ const CartScreen: React.FC = () => {
 
                   <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
 
-                  {item.toppings.map((topping) => (
-                    <View key={topping._id} style={styles.toppingContainer}>
-                      <Text style={styles.toppingText}>
-                        + {topping.toppingId.name} ({topping.toppingId.price.toLocaleString("vi-VN")}đ) x{topping.quantity}
-                      </Text>
+                  {item.toppings.map((topping, index) => (
+                    <View key={topping?._id || index} style={styles.toppingContainer}>
+                      {topping?.toppingId ? (
+                        <Text style={styles.toppingText}>
+                          + {topping.toppingId.name} ({topping.toppingId.price?.toLocaleString("vi-VN")}đ) x{topping.quantity}
+                        </Text>
+                      ) : (
+                        <Text style={styles.toppingText}>Topping không xác định</Text>
+                      )}
                     </View>
                   ))}
 

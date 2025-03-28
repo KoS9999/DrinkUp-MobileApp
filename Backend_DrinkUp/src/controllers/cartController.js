@@ -213,6 +213,56 @@ exports.updateCartItemQuantity = async (req, res) => {
   }
 }
 
+
+//COI LẠI HÀM NÀY, CHỖ TOPPING ID ĐANG CÓ VẤN ĐỀ
+exports.updateCartItemOptions = async (req, res) => {
+  const { itemId } = req.params;
+  const userId = req.userId; 
+  const { size, sweetLevel, iceLevel, toppings, quantity } = req.body;
+
+  try {
+    // Tìm giỏ hàng của người dùng
+    let cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(404).json({ message: 'Giỏ hàng không tồn tại' });
+    }
+
+    // Kiểm tra itemId có hợp lệ không
+    const objectId = mongoose.Types.ObjectId.isValid(itemId) ? new mongoose.Types.ObjectId(itemId) : itemId;
+
+    // Tìm sản phẩm trong giỏ hàng
+    const itemIndex = cart.items.findIndex(item => item._id.equals(objectId));
+
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: 'Sản phẩm không tồn tại trong giỏ hàng' });
+    }
+
+    // Cập nhật thông tin của món
+    if (size) cart.items[itemIndex].size = size;
+    if (sweetLevel !== undefined) cart.items[itemIndex].sweetLevel = sweetLevel;
+    if (iceLevel !== undefined) cart.items[itemIndex].iceLevel = iceLevel;
+    if (quantity !== undefined && quantity > 0){
+      cart.items[itemIndex].quantity = quantity;      
+    }
+    if (Array.isArray(toppings)) {
+      cart.items[itemIndex].toppings = toppings.map(topping => ({
+        toppingId: topping.toppingId, // Giữ nguyên toppingId (không chỉ lấy _id)
+        quantity: topping.quantity || 1,
+        _id: topping._id, // Giữ lại _id gốc
+      }));
+    }
+
+    await cart.save();
+
+    res.status(200).json({ message: 'Cập nhật sản phẩm thành công!', cart });
+
+  } catch (error) {
+    console.error("Lỗi cập nhật sản phẩm:", error);
+    res.status(500).json({ message: "Lỗi server!" });
+  }
+};
+
+
 // exports.updateCart = async (req, res) => {
 //   try {
 //     const { userId, productId, size, quantity } = req.body;

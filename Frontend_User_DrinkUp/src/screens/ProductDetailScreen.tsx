@@ -69,6 +69,10 @@ const ProductDetailScreen: React.FC = () => {
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    
+    const [itemId, setItemId] = useState<string>(
+        cartItem?.cartItemId ?? null
+    );
 
     const [selectedSize, setSelectedSize] = useState<string>(
         cartItem?.size ?? "S"
@@ -89,7 +93,7 @@ const ProductDetailScreen: React.FC = () => {
     const [selectedTopping, setSelectedTopping] = useState<
         { id: string; name: string; quantity: number }[]
     >(cartItem?.toppings?.map(t => ({
-        id: t.toppingId._id, 
+        id: t.toppingId._id,
         name: t.toppingId.name,
         quantity: t.quantity
     })) ?? []);
@@ -234,6 +238,64 @@ const ProductDetailScreen: React.FC = () => {
             //alert("Thêm vào giỏ hàng thất bại!");
         }
     }
+
+
+    const handleUpdateCart = async () => {
+        console.log("✏️ Cập nhật giỏ hàng");
+
+        if (!itemId) {
+            console.error("❌ Lỗi: Không tìm thấy itemId khi cập nhật.");
+        } else{
+            console.log("itemdId: ", itemId);
+        }
+
+        try {
+            const token = await getAuthToken();
+            const url = `${API_BASE_URL}/cart/update-cart/${itemId}`;
+
+            const requestBody = {
+                quantity: quantity,
+                size: selectedSize,
+                iceLevel: selectedIce,
+                sweetLevel: selectedSweet,
+                toppings: Array.isArray(selectedTopping)
+                    ? selectedTopping.map(topping => ({
+                        toppingId: topping.id,
+                        quantity: topping.quantity ?? 1
+                    }))
+                    : Object.entries(selectedTopping).map(([toppingId, quantity]) => ({
+                        toppingId,
+                        quantity
+                    })),
+            };
+
+            const response = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (!response.ok) throw new Error(`Lỗi API: ${response.status}`);
+
+            const data = await response.json();
+            Toast.show({
+                type: "success",
+                text1: "Thông báo",
+                text2: "Cập nhật giỏ hàng thành công! 🛒",
+                position: "top",
+                visibilityTime: 4000,
+            });
+            console.log("✅ Cập nhật thành công:", data);
+
+        } catch (error) {
+            console.error("❌ Lỗi khi cập nhật giỏ hàng:", error);
+        }
+    };
+
 
     useEffect(() => {
         fetch(`${API_BASE_URL}/product/get-product/${productId}`)
@@ -429,8 +491,13 @@ const ProductDetailScreen: React.FC = () => {
             </View>
 
             <View style={styles.quantityContainer}>
-                <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-                    <Text style={styles.addToCartText}>{isEditing ? "Cập nhật món" : "Thêm vào giỏ hàng"}   </Text>
+                <TouchableOpacity
+                    style={styles.addToCartButton}
+                    onPress={isEditing ? handleUpdateCart : handleAddToCart}
+                >
+                    <Text style={styles.addToCartText}>
+                        {isEditing ? "Cập nhật món" : "Thêm vào giỏ hàng"}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </View>
