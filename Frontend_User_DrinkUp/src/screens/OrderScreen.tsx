@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, FlatList } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, 
+   KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform, ScrollView, RefreshControl  } from "react-native";
 import { RadioButton } from "react-native-paper";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -56,8 +57,12 @@ const OrderScreen: React.FC = () => {
   const [pickupTime, setPickupTime] = useState<{ hours: number; minutes: number }>({ hours: 12, minutes: 0 });
   const [visible, setVisible] = useState(false);
   const [note, setNote] = useState("");
+  const [redeemPoints, setRedeemPoints] = useState("");
+  const [pointsDiscount, setPointsDiscount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<NavigationProps>();
+  const parsedRedeemPoints = parseInt(redeemPoints) || 0;
+  
 
   useEffect(() => {
     fetchCart();
@@ -65,8 +70,8 @@ const OrderScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setTotalPrice(originalTotalPrice - discountPrice);
-  }, [originalTotalPrice, discountPrice]);
+  setTotalPrice(originalTotalPrice - discountPrice - pointsDiscount);
+}, [originalTotalPrice, discountPrice, pointsDiscount]);
 
   const fetchCart = async () => {
     try {
@@ -111,7 +116,6 @@ const OrderScreen: React.FC = () => {
     }
   };
 
-
   const fetchBranches = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/order/branches`);
@@ -126,12 +130,68 @@ const OrderScreen: React.FC = () => {
     }
   };
 
+  const previewRedeemPoints = async () => {
+    const parsedPoints = parseInt(redeemPoints);
+  
+    if (!parsedPoints || parsedPoints % 1000 !== 0) {
+      Toast.show({
+        type: "error",
+        text1: "Điểm không hợp lệ",
+        text2: "Chỉ được quy đổi bội số của 1000 điểm.",
+      });
+      return;
+    }
+  
+    try {
+      const token = await getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/order/redeem-points`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ points: parsedPoints }),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok && data.success) {
+        setPointsDiscount(data.discountValue);
+        setTotalPrice(originalTotalPrice - discountPrice - data.discountValue);
+        Toast.show({
+          type: "success",
+          text1: "Ước tính giảm giá thành công!",
+          text2: `Sẽ giảm ${data.discountValue.toLocaleString()}đ khi thanh toán.`,
+        });
+      } else {
+        setPointsDiscount(0);
+        Toast.show({
+          type: "error",
+          text1: "Không thể quy đổi",
+          text2: data.error || "Vui lòng kiểm tra lại điểm bạn đã nhập.",
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi xem điểm quy đổi:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi kết nối",
+        text2: "Không thể kết nối tới server.",
+      });
+    }
+  };
+  
   const applyDiscount = async () => {
     if (!promoCode.trim()) {
       setDiscountPrice(0);
+      Toast.show({
+        type: "info",
+        text1: "Mã khuyến mãi trống",
+        text2: "Vui lòng nhập mã trước khi áp dụng.",
+      });
       return;
     }
-
+  
     try {
       const token = await getAuthToken();
       const response = await fetch(`${API_BASE_URL}/order/apply-coupon`, {
@@ -142,20 +202,34 @@ const OrderScreen: React.FC = () => {
         },
         body: JSON.stringify({ couponCode: promoCode }),
       });
+  
       const data = await response.json();
-
+  
       if (data.success) {
         setDiscountPrice(data.discountPrice);
-        alert(data.message);
+        Toast.show({
+          type: "success",
+          text1: "Áp dụng mã thành công!",
+          text2: `${data.message || "Bạn đã được giảm giá."}`,
+        });
       } else {
-        alert(data.error || "Mã giảm giá không hợp lệ");
         setDiscountPrice(0);
+        Toast.show({
+          type: "error",
+          text1: "Mã không hợp lệ",
+          text2: data.error || "Không thể áp dụng mã khuyến mãi này.",
+        });
       }
     } catch (error) {
       console.error("Lỗi khi áp dụng mã giảm giá:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi kết nối",
+        text2: "Không thể áp dụng mã giảm giá. Vui lòng kiểm tra kết nối mạng.",
+      });
     }
   };
-
+  
   const onDismiss = () => {
     setVisible(false);
   };
@@ -168,7 +242,7 @@ const OrderScreen: React.FC = () => {
   const placeOrder = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
-
+  
       const orderData = {
         orderType: deliveryMethod,
         branchId: deliveryMethod === "pickup" ? selectedBranch?._id : null,
@@ -176,6 +250,7 @@ const OrderScreen: React.FC = () => {
         couponCode: promoCode || null,
         paymentMethod: selectedPayment.toLowerCase() === "cod" ? "cod" : "zaloPay",
         note: note || "",
+        redeemPoints: parsedRedeemPoints,  // Đảm bảo giá trị `redeemPoints` được gửi đi
         cartItems: cart.map((item) => ({
           productId: item.productId._id,
           quantity: item.quantity,
@@ -190,9 +265,7 @@ const OrderScreen: React.FC = () => {
           })),
         })),
       };
-
-      console.log("Gửi request đặt hàng:", orderData);
-
+  
       const response = await fetch(`${API_BASE_URL}/order/create/cod`, {
         method: "POST",
         headers: {
@@ -201,47 +274,29 @@ const OrderScreen: React.FC = () => {
         },
         body: JSON.stringify(orderData),
       });
-
-      const text = await response.text();
-      console.log("API Response:", text);
-
-      try {
-        const data = JSON.parse(text);
-        if (response.ok) {
-          Toast.show({
-            type: "success",
-            text1: "Đặt hàng thành công",
-            text2: `Mã đơn hàng: ${data.order._id}`,
-            visibilityTime: 4000,
-          });
-
-          // Xóa giỏ hàng trên client
-          setCart([]);
-          navigation.navigate("AccountTab");
-        } else {
-          Toast.show({
-            type: "error",
-            text1: "Lỗi đặt hàng",
-            text2: data.error || "Có lỗi xảy ra khi đặt hàng.",
-            visibilityTime: 4000,
-          });
-        }
-      } catch (jsonError) {
-        console.error("Lỗi JSON Parse:", jsonError);
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        Toast.show({
+          type: "success",
+          text1: "Đặt hàng thành công",
+          text2: `Mã đơn hàng: ${data.order._id}`,
+        });
+        setCart([]);
+        navigation.navigate("AccountTab");
+      } else {
         Toast.show({
           type: "error",
-          text1: "Lỗi dữ liệu",
-          text2: "Lỗi khi xử lý dữ liệu từ server. Vui lòng thử lại!",
-          visibilityTime: 4000,
+          text1: "Lỗi đặt hàng",
+          text2: data.error || "Có lỗi xảy ra khi đặt hàng.",
         });
       }
     } catch (error) {
-      console.error("Lỗi khi đặt hàng:", error);
       Toast.show({
         type: "error",
         text1: "Lỗi kết nối",
         text2: "Không thể tạo đơn hàng. Vui lòng kiểm tra kết nối mạng!",
-        visibilityTime: 4000,
       });
     }
   };
@@ -253,27 +308,45 @@ const OrderScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  const handleDecrease = () => {
+    setRedeemPoints(prev => {
+      const currentPoints = parseInt(prev) || 1000; 
+      const newPoints = Math.max(1000, currentPoints - 1000); 
+      return newPoints.toString();
+    });
+  };
+
+  const handleIncrease = () => {
+    setRedeemPoints(prev => {
+      const currentPoints = parseInt(prev) || 0; 
+      const newPoints = currentPoints + 1000;
+      return newPoints.toString(); 
+    });
+  };
+
 
   return (
-    <FlatList
-      data={["header"]}
-      keyExtractor={(item) => item}
-      contentContainerStyle={styles.listContainer}
-      keyboardShouldPersistTaps="handled"
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      renderItem={() => (
-        <>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={styles.listContainer}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
           {/* Phương thức nhận hàng */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Phương thức nhận hàng</Text>
             <View style={styles.radioGroup}>
               <TouchableOpacity style={styles.radioButton} onPress={() => setDeliveryMethod("delivery")}>
-                <RadioButton.Android value="delivery" status={deliveryMethod === "delivery" ? "checked" : "unchecked"} onPress={() => setDeliveryMethod("delivery")} />
+                <RadioButton.Android value="delivery" status={deliveryMethod === "delivery" ? "checked" : "unchecked"} />
                 <Text style={styles.radioLabel}>Giao hàng</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.radioButton} onPress={() => setDeliveryMethod("pickup")}>
-                <RadioButton.Android value="pickup" status={deliveryMethod === "pickup" ? "checked" : "unchecked"} onPress={() => setDeliveryMethod("pickup")} />
+                <RadioButton.Android value="pickup" status={deliveryMethod === "pickup" ? "checked" : "unchecked"} />
                 <Text style={styles.radioLabel}>Đến lấy tại cửa hàng</Text>
               </TouchableOpacity>
             </View>
@@ -286,19 +359,26 @@ const OrderScreen: React.FC = () => {
             ) : (
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Cửa hàng đến lấy</Text>
-                <FlatList
-                  data={branches}
-                  keyExtractor={(item, index) => (item?._id ? item._id.toString() : index.toString())}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.branchItem} onPress={() => setSelectedBranch(item)}>
-                      <Text style={[styles.branchText, selectedBranch && selectedBranch._id === item._id ? styles.selectedBranch : null]}>
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+                  {branches.map((item, index) => (
+                    <TouchableOpacity
+                      key={item._id || index}
+                      style={styles.branchItem}
+                      onPress={() => setSelectedBranch(item)}
+                    >
+                      <Text
+                        style={[
+                          styles.branchText,
+                          selectedBranch && selectedBranch._id === item._id
+                            ? styles.selectedBranch
+                            : null,
+                        ]}
+                      >
                         {item.name} - {item.address}
                       </Text>
                     </TouchableOpacity>
-                  )}
-                  nestedScrollEnabled={true}
-                  style={{ maxHeight: 200 }}
-                />
+                  ))}
+                </ScrollView>
                 {selectedBranch && (
                   <Text style={styles.customerInfo}>Chi nhánh đã chọn: {selectedBranch.name}</Text>
                 )}
@@ -316,6 +396,7 @@ const OrderScreen: React.FC = () => {
             )}
           </View>
 
+  
           {/* Tóm tắt đơn hàng */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tóm tắt đơn hàng</Text>
@@ -324,7 +405,7 @@ const OrderScreen: React.FC = () => {
                 const basePrice = item.productId?.price?.[item.size] || 0;
                 const toppingPrice = item.toppings.reduce((sum, topping) => sum + (topping.toppingId?.price || 0) * topping.quantity, 0);
                 const itemTotalPrice = (basePrice + toppingPrice) * item.quantity;
-
+  
                 return (
                   <View key={item._id} style={styles.orderItem}>
                     {/* Hình ảnh sản phẩm */}
@@ -338,7 +419,7 @@ const OrderScreen: React.FC = () => {
                       <Text style={styles.orderDescription}>Số lượng: {item.quantity}</Text>
                       {/* Độ đá & đường */}
                       <Text style={styles.orderDescription}>Đá: {item.iceLevel} - Đường: {item.sweetLevel}</Text>
-
+  
                       {/* Hiển thị danh sách toppings nếu có */}
                       {item.toppings.length > 0 && (
                         <View style={styles.toppingContainer}>
@@ -350,7 +431,7 @@ const OrderScreen: React.FC = () => {
                           ))}
                         </View>
                       )}
-
+  
                       {/* Giá tổng cho từng sản phẩm */}
                       <Text style={styles.orderPrice}>{itemTotalPrice.toLocaleString()}đ</Text>
                     </View>
@@ -360,14 +441,14 @@ const OrderScreen: React.FC = () => {
             ) : (
               <Text>Giỏ hàng trống</Text>
             )}
-
+  
             {/* Tổng tiền đơn hàng */}
             <View style={styles.totalContainer}>
               <Text style={styles.totalText}>Tổng cộng</Text>
               <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
             </View>
           </View>
-
+  
           {/* Khuyến mãi */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Khuyến mãi</Text>
@@ -388,6 +469,47 @@ const OrderScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
+  
+          {/* Quy đổi điểm (ước tính) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Khuyến mãi</Text>
+            <View style={styles.promoContainer}>
+              {/* Nút giảm số điểm */}
+              <TouchableOpacity
+                style={[styles.adjustButton, styles.decreaseButton]}
+                onPress={handleDecrease} // Sử dụng handleDecrease để giảm điểm
+              >
+                <Text style={styles.buttonText}>-</Text>
+              </TouchableOpacity>
+  
+              {/* Hiển thị số điểm quy đổi */}
+              <TextInput
+                style={[styles.input, { textAlign: 'center' }]} // Căn giữa số điểm
+                value={redeemPoints.toString()} // Hiển thị redeemPoints
+                editable={false} // Không cho phép người dùng chỉnh sửa trực tiếp
+              />
+  
+              {/* Nút tăng số điểm */}
+              <TouchableOpacity
+                style={[styles.adjustButton, styles.increaseButton]}
+                onPress={handleIncrease} // Sử dụng handleIncrease để tăng điểm
+              >
+                <Text style={styles.buttonText}>+</Text>
+              </TouchableOpacity>
+  
+              {/* Nút Ước tính */}
+              <TouchableOpacity style={styles.applyButton} onPress={previewRedeemPoints}>
+                <Text style={styles.applyButtonText}>Ước tính</Text>
+              </TouchableOpacity>
+            </View>
+  
+            {pointsDiscount > 0 && (
+              <Text style={{ color: "#2ecc71", fontWeight: "bold", marginTop: 5 }}>
+                Sẽ giảm {pointsDiscount.toLocaleString()}đ từ điểm thưởng
+              </Text>
+            )}
+          </View>
+  
           {/* Tổng cộng tiền */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tổng cộng</Text>
@@ -396,6 +518,7 @@ const OrderScreen: React.FC = () => {
               <Text style={styles.totalPrice}>{totalPrice.toLocaleString()}đ</Text>
             </View>
           </View>
+  
           {/* Phương thức thanh toán */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Phương thức thanh toán</Text>
@@ -410,6 +533,7 @@ const OrderScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
           </View>
+  
           {/* Tổng cộng tiền và ghi chú */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Tổng cộng</Text>
@@ -424,46 +548,53 @@ const OrderScreen: React.FC = () => {
               onChangeText={setNote}
             />
           </View>
-
+  
           {/* Nút đặt hàng */}
           <TouchableOpacity style={styles.orderButton} onPress={placeOrder}>
             <Text style={styles.orderButtonText}>Đặt hàng</Text>
           </TouchableOpacity>
-        </>
-      )}
-    />
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
+  
 };
 
 const styles = StyleSheet.create({
   listContainer: {
     paddingTop: 50,
-    paddingBottom: 100,
-    paddingHorizontal: 15,
+    paddingBottom: 80,
+    paddingHorizontal: 20,
     backgroundColor: "#F8F8F8",
   },
   container: {
     flex: 1,
     backgroundColor: "#F8F8F8",
-    padding: 15,
+    padding: 20,
   },
 
   scrollView: {
-    paddingTop: 55,
-    paddingBottom: 125,
-    paddingHorizontal: 15,
+    paddingTop: 50,
+    paddingBottom: 80,
+    paddingHorizontal: 20,
   },
 
   section: {
     backgroundColor: "#FFF",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 12,
   },
   radioGroup: {
     flexDirection: "row",
@@ -472,86 +603,98 @@ const styles = StyleSheet.create({
   radioButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 5,
+    marginVertical: 8,
   },
   radioLabel: {
-    fontSize: 14,
+    fontSize: 15,
+    color: "#555",
   },
   inputContainer: {
-    marginTop: 10,
+    marginTop: 15,
   },
   label: {
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 5,
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#555",
   },
   input: {
-    backgroundColor: "#F1F1F1",
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 5,
+    backgroundColor: "#F9F9F9",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
     flex: 1,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
   branchItem: {
-    padding: 10,
-    backgroundColor: "#F8F8F8",
-    borderRadius: 5,
-    marginVertical: 5,
+    padding: 12,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 10,
+    marginVertical: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   branchText: {
     fontSize: 14,
+    color: "#444",
   },
   selectedBranch: {
     fontWeight: "bold",
-    color: "#D2691E",
+    color: "#FF6347",
   },
   customerInfo: {
-    fontSize: 14,
+    fontSize: 13,
     color: "gray",
-    marginTop: 5,
+    marginTop: 6,
   },
   orderItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20
+    marginBottom: 25,
   },
   productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-    marginRight: 15,
+    width: 85,
+    height: 85,
+    borderRadius: 12,
+    marginRight: 18,
   },
   orderDetails: {
     flex: 1,
   },
   orderText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#333",
   },
   orderDescription: {
-    fontSize: 12,
+    fontSize: 14,
     color: "gray",
     marginVertical: 5,
   },
   orderPrice: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#D2691E",
+    color: "#FF6347",
   },
 
   toppingContainer: {
-    marginTop: 5,
-    paddingLeft: 5,
-    borderLeftWidth: 2,
+    marginTop: 6,
+    paddingLeft: 8,
+    borderLeftWidth: 3,
     borderColor: "#FFA500",
   },
   toppingTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "bold",
-    color: "#D2691E",
+    color: "#FF6347",
   },
   toppingText: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#555",
   },
   promoContainer: {
@@ -559,40 +702,74 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   applyButton: {
-    backgroundColor: "#D2691E",
-    padding: 10,
-    borderRadius: 5,
-    marginLeft: 10,
+    backgroundColor: "#FF6347",
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+    marginLeft: 12,
+    shadowColor: "#FF6347",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
   applyButtonText: {
     color: "#FFF",
     fontWeight: "700",
+    fontSize: 16,
   },
   totalContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 10,
+    marginTop: 12,
   },
   totalText: {
-    fontSize: 14,
+    fontSize: 16,
+    color: "#333",
   },
   totalPrice: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
-    color: "#D2691E",
+    color: "#FF6347",
   },
   orderButton: {
-    backgroundColor: "#D2691E",
-    padding: 15,
+    backgroundColor: "#FF6347",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 12,
+    shadowColor: "#FF6347",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
   orderButtonText: {
     color: "#FFF",
     fontWeight: "700",
     fontSize: 16,
   },
+  adjustButton: {
+    width: 50,
+    height: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f1f1f1",
+    borderRadius: 25,
+  },
+  decreaseButton: {
+    backgroundColor: "#e74c3c", 
+  },
+  increaseButton: {
+    backgroundColor: "#2ecc71", 
+  },
+  buttonText: {
+    fontSize: 25,
+    color: "#FFF",
+    fontWeight: "700",
+  },
 });
+
 
 export default OrderScreen;
