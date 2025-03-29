@@ -40,9 +40,12 @@ const OrderDetailScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<any>({}); 
   const [isReviewing, setIsReviewing] = useState(false);
-  const [rating, setRating] = useState(1); 
-  const [reviewText, setReviewText] = useState("");
   const route = useRoute<RouteParams>();
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [ratings, setRatings] = useState<{ [key: string]: number }>({}); 
+  const [reviewTexts, setReviewTexts] = useState<{ [key: string]: string }>({}); 
+
+
 
   useEffect(() => {
     fetchOrderDetails();
@@ -111,9 +114,10 @@ const OrderDetailScreen: React.FC = () => {
       console.error("Lỗi: Không tìm thấy token!");
       return;
     }
+  
     const reviewData = {
-      rating, 
-      reviewText,
+      rating: ratings[orderDetailId] || 1, // Lấy rating cho sản phẩm này
+      reviewText: reviewTexts[orderDetailId] || "", // Lấy reviewText cho sản phẩm này
     };
   
     const existingReview = reviews[orderDetailId];
@@ -121,6 +125,7 @@ const OrderDetailScreen: React.FC = () => {
     try {
       let response;
       if (existingReview) {
+        // Cập nhật đánh giá
         response = await fetch(`${API_BASE_URL}/user/reviews/${existingReview._id}`, {
           method: "PUT",
           headers: {
@@ -128,12 +133,13 @@ const OrderDetailScreen: React.FC = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            reviewId: existingReview._id,  
-            rating,
-            reviewText,
+            reviewId: existingReview._id,
+            rating: reviewData.rating,
+            reviewText: reviewData.reviewText,
           }),
         });
       } else {
+        // Tạo mới đánh giá
         response = await fetch(`${API_BASE_URL}/user/reviews`, {
           method: "POST",
           headers: {
@@ -142,18 +148,18 @@ const OrderDetailScreen: React.FC = () => {
           },
           body: JSON.stringify({
             orderDetailId,
-            rating,
-            reviewText,
+            rating: reviewData.rating,
+            reviewText: reviewData.reviewText,
           }),
         });
       }
   
       const data = await response.json();
-      console.log("API Response:", data); 
+      console.log("API Response:", data);
   
       if (response.ok) {
         console.log("Đánh giá đã được xử lý thành công:", data);
-        fetchReviews(orderDetails); 
+        fetchReviews(orderDetails); // Tải lại các đánh giá
         setIsReviewing(false);
       } else {
         console.error("Lỗi khi gửi đánh giá:", data?.error || "Lỗi không xác định");
@@ -162,7 +168,6 @@ const OrderDetailScreen: React.FC = () => {
       console.error("Lỗi khi gửi yêu cầu API:", error);
     }
   };
-
   return (
     <View style={styles.container}>
       {loading ? (
@@ -181,29 +186,36 @@ const OrderDetailScreen: React.FC = () => {
               <Text style={styles.orderText}>📅 Ngày đặt: {new Date(order.createdAt).toLocaleDateString("vi-VN")}</Text>
             </View>
           )}
-
+  
           {/* Review Form */}
-          {isReviewing && (
+          {isReviewing && selectedProductId && (
             <View style={styles.reviewForm}>
               <Text>🌟 Chọn đánh giá (1-5):</Text>
               <TextInput
                 style={styles.ratingInput}
-                value={String(rating)}
-                onChangeText={(text) => setRating(Number(text))}
+                value={String(ratings[selectedProductId] || 1)} // Sử dụng rating cho sản phẩm được chọn
+                onChangeText={(text) => setRatings((prevRatings) => ({
+                  ...prevRatings,
+                  [selectedProductId]: Number(text), // Cập nhật rating cho sản phẩm hiện tại
+                }))}
                 keyboardType="numeric"
               />
               <Text>📝 Nhập đánh giá:</Text>
               <TextInput
                 style={styles.reviewInput}
-                value={reviewText}
-                onChangeText={(text) => setReviewText(text)}
+                value={reviewTexts[selectedProductId] || ""} // Sử dụng reviewText cho sản phẩm được chọn
+                onChangeText={(text) => setReviewTexts((prevReviewTexts) => ({
+                  ...prevReviewTexts,
+                  [selectedProductId]: text, // Cập nhật reviewText cho sản phẩm hiện tại
+                }))}
                 multiline
                 placeholder="Nhập đánh giá của bạn..."
               />
-              <Button title="Gửi đánh giá" onPress={() => handleCreateOrUpdateReview(orderDetails[0]._id)} />
+              <Button title="Gửi đánh giá" onPress={() => handleCreateOrUpdateReview(selectedProductId)} />
               <Button title="Hủy" onPress={() => setIsReviewing(false)} />
             </View>
           )}
+  
           <Text style={styles.sectionTitle}>🛒 Sản phẩm đã đặt</Text>
           <FlatList
             data={orderDetails}
@@ -211,7 +223,7 @@ const OrderDetailScreen: React.FC = () => {
             renderItem={({ item }) => {
               const toppingPrice = item.toppings.reduce((sum, topping) => sum + topping.price * topping.quantity, 0);
               const totalItemPrice = (item.price + toppingPrice) * item.quantity;
-
+  
               return (
                 <View style={styles.productCard}>
                   <Image source={{ uri: item.product.imageUrl }} style={styles.productImage} />
@@ -220,7 +232,7 @@ const OrderDetailScreen: React.FC = () => {
                     <Text style={styles.productDetails}>☕ Kích thước: {item.size}</Text>
                     <Text style={styles.productDetails}>🔢 Số lượng: {item.quantity}</Text>
                     <Text style={styles.productDetails}>🧊 Đá: {item.iceLevel} - 🍯 Đường: {item.sweetLevel}</Text>
-
+  
                     {item.toppings.length > 0 && (
                       <View style={styles.toppingContainer}>
                         <Text style={styles.toppingTitle}>🌟 Toppings:</Text>
@@ -231,12 +243,17 @@ const OrderDetailScreen: React.FC = () => {
                         ))}
                       </View>
                     )}
-
+  
                     <Text style={styles.productPrice}>💲 Giá tổng: {totalItemPrice.toLocaleString()}đ</Text>
-
+  
                     <Button
                       title={reviews[item._id] ? "Sửa đánh giá" : "Tạo đánh giá"}
-                      onPress={() => setIsReviewing(true)} 
+                      onPress={() => {
+                        setIsReviewing(true);
+                        setSelectedProductId(item._id); // Lưu lại ID sản phẩm để đánh giá
+                        setRatings({ ...ratings, [item._id]: reviews[item._id]?.rating || 1 });
+                        setReviewTexts({ ...reviewTexts, [item._id]: reviews[item._id]?.reviewText || "" });
+                      }}
                     />
                   </View>
                 </View>
