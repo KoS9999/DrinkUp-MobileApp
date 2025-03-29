@@ -1,8 +1,8 @@
 const admin = require('firebase-admin');
 const path = require('path');
 const fs = require('fs').promises;
-//const serviceAccount = require(path.resolve('C:/Users/THONG PC/Downloads/LTDDNC/drinkup-mobileapp-firebase-adminsdk-s573s-9c93f9d955.json'));
-const serviceAccount = require(path.resolve('D:/TotNghiep/drinkup-mobileapp-firebase-adminsdk-s573s-9c93f9d955.json'));
+const serviceAccount = require(path.resolve('C:/Users/THONG PC/Downloads/LTDDNC/drinkup-mobileapp-firebase-adminsdk-s573s-9c93f9d955.json'));
+//const serviceAccount = require(path.resolve('D:/TotNghiep/drinkup-mobileapp-firebase-adminsdk-s573s-9c93f9d955.json'));
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
