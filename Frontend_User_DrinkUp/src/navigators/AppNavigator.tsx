@@ -18,10 +18,14 @@ import AccountScreen from "../screens/AccountScreen";
 import UpdateProfileScreen from "../screens/UpdateProfileScreen";
 import UpdateEmailScreen from "../screens/UpdateEmailScreen";
 import UpdatePhoneScreen from "../screens/UpdatePhoneScreen";
+import FavouriteListScreen from "../screens/FavouriteListScreen";
+import FavoriteStoresScreen from "../screens/FavoriteStoresScreen";
+import FavoriteProductsScreen from "../screens/FavoriteProductsScreen";
 import SearchScreen from "../screens/SearchScreen";
 import ProductDetailScreen from "../screens/ProductDetailScreen";
 import OrderDetailScreen from "../screens/OrderDetailScreen";
 import OrderHistoryScreen from "../screens/OrderHistoryScreen";
+
 
 
 import FooterNavigation from "../components/FooterNavigation";
@@ -39,6 +43,9 @@ export type RootStackParamList = {
   UpdateProfileScreen: undefined;
   UpdateEmailScreen: undefined;
   UpdatePhoneScreen: undefined;
+  FavouriteListScreen: undefined;
+  FavoriteStoresScreen: undefined;
+  FavoriteProductsScreen: undefined;
   OrderHistoryScreen: undefined;
   OrderDetailScreen: { orderId: string };
   SearchScreen: undefined;
@@ -99,6 +106,7 @@ const AccountStack = () => {
       <Stack.Screen name="UpdateProfileScreen" component={UpdateProfileStack} />
       <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetailScreen" component={OrderDetailScreen} />
+      <Stack.Screen name="FavouriteListScreen" component={FavouriteListScreen}/>
     </Stack.Navigator>
   );
 };

@@ -42,7 +42,7 @@ const AccountScreen = () => {
   const menuItems: TabItem[] = [
     { label: "Chỉnh sửa trang cá nhân", icon: "edit", IconComponent: MaterialIcons, action: () => navigation.navigate("UpdateProfileScreen"),},
     { label: "Sở thích", icon: "coffee", IconComponent: MaterialIcons },
-    { label: "Danh sách yêu thích", icon: "heart-half", IconComponent: Ionicons },
+    { label: "Danh sách yêu thích", icon: "heart-half", IconComponent: Ionicons, action: () =>navigation.navigate("FavouriteListScreen"), },
     { label: "Đặc quyền hạng thành viên", icon: "medal", IconComponent: FontAwesome5 },
     { label: "Ưu đãi", icon: "pricetag", IconComponent: Ionicons },
     { label: "Lịch sử đặt hàng", icon: "history", IconComponent: MaterialIcons, action: () => navigation.navigate("OrderHistoryScreen"), },
