@@ -9,7 +9,7 @@ const homeRoutes = require('./src/routes/homeRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 const cartRoutes = require('./src/routes/cartRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
-
+const favoriteRoutes = require('./src/routes/favoriteRoutes');
 
 connectDB();
 const app = express();
@@ -23,6 +23,7 @@ app.use('/api/home', homeRoutes);
 app.use('/api/product', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/order', orderRoutes);
+app.use('/api/favorite', favoriteRoutes);
 
 
 const PORT = process.env.PORT || 5000;

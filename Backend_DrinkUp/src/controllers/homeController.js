@@ -1,7 +1,7 @@
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const OrderDetail = require('../models/OrderDetail');
-const Favorite = require('../models/Favorite');
+const Favorite = require('../models/FavoriteProduct');
 
 exports.getAllCategories = async (req, res) => {
     try {
