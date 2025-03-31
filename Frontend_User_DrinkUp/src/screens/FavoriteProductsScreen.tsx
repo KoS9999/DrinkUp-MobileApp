@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator, FlatList } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native"; // Thêm useFocusEffect
 import { StackNavigationProp } from "@react-navigation/stack";
 import HorizontalProductCard from "../components/HorizontalProductCard";
 import { API_BASE_URL } from "../config/api";
@@ -41,46 +41,47 @@ const FavoriteProductsScreen = () => {
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation<StackNavigationProp<any>>();
 
-    useEffect(() => {
-        const fetchFavoriteProducts = async () => {
-          try {
+    // Dùng useCallback để tránh tạo lại hàm trong mỗi lần render
+    const fetchFavoriteProducts = useCallback(async () => {
+        try {
+            setLoading(true);
             const token = await getAuthToken();
             if (!token) return;
-    
-            const response = await fetch(
-              `${API_BASE_URL}/favorite/favorite-products`,
-              {
+
+            const response = await fetch(`${API_BASE_URL}/favorite/favorite-products`, {
                 method: "GET",
                 headers: {
-                  Accept: "application/json",
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                 },
-              }
-            );
-    
+            });
+
             if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
+                throw new Error(`HTTP error! Status: ${response.status}`);
             }
-    
+
             const data: FavoriteProductResponse = await response.json();
             console.log("Danh sách SPYT:", JSON.stringify(data, null, 2));
-    
-            // Trích xuất danh sách sản phẩm hợp lệ
+
             const extractedProducts: Product[] = data.items
-              .map((item) => item.productId)
-              .filter((product): product is Product => Boolean(product && product._id));
-    
+                .map((item) => item.productId)
+                .filter((product): product is Product => Boolean(product && product._id));
+
             setFavoriteProducts(extractedProducts);
-          } catch (error) {
+        } catch (error) {
             console.error("Lỗi khi lấy danh sách sản phẩm yêu thích: ", error);
-          } finally {
+        } finally {
             setLoading(false);
-          }
-        };
-    
-        fetchFavoriteProducts();
-      }, []);
+        }
+    }, []);
+
+    // Dùng useFocusEffect để gọi API mỗi khi trang được focus
+    useFocusEffect(
+        useCallback(() => {
+            fetchFavoriteProducts();
+        }, [fetchFavoriteProducts]) // Đưa fetchFavoriteProducts vào dependencies
+    );
 
     if (loading) {
         return (
@@ -112,10 +113,12 @@ const FavoriteProductsScreen = () => {
     );
 };
 
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "white",
+        marginBottom: 100
     },
     loadingContainer: {
         flex: 1,

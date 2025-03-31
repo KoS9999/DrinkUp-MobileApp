@@ -69,7 +69,9 @@ const ProductDetailScreen: React.FC = () => {
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
-    
+    const [isFavorite, setIsFavorite] = useState<boolean>(false);
+    const [itemFavoriteProductId, setItemFavoriteProductId] = useState<string>("");
+
     const [itemId, setItemId] = useState<string>(
         cartItem?.cartItemId ?? null
     );
@@ -245,7 +247,7 @@ const ProductDetailScreen: React.FC = () => {
 
         if (!itemId) {
             console.error("❌ Lỗi: Không tìm thấy itemId khi cập nhật.");
-        } else{
+        } else {
             console.log("itemdId: ", itemId);
         }
 
@@ -298,29 +300,122 @@ const ProductDetailScreen: React.FC = () => {
 
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/product/get-product/${productId}`)
-            .then((res) => res.json())
-            .then((data) => {
-                console.log("Fetched data:", data);
-                console.log("ID san pham: ", data.product._id);
+        const fetchProductDetails = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/product/get-product/${productId}`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        console.log("Fetched data:", data);
+                        console.log("ID san pham: ", data.product._id);
 
-                if (data?.success) {
-                    setProduct(data.product);
-                    // setSelectedSweet(data.sweetLevels);
-                    // setSelectedIce(data.iceLevels);
-                    console.log("Received productId:", productId);
-                }
-            })
-            .catch((error) => console.error("Lỗi khi lấy chi tiết sản phẩm:", error))
-            .finally(() => setLoading(false));
+                        if (data?.success) {
+                            setProduct(data.product);
+                            // setSelectedSweet(data.sweetLevels);
+                            // setSelectedIce(data.iceLevels);
+                            console.log("Received productId:", productId);
+                        }
+                    })
+            } catch (error) {
+                console.error("Lỗi khi lấy chi tiết sản phẩm:", error);
+            } finally {
+                setLoading(false)
+            };
+        }
+
+        const checkIfFavorite = async () => {
+            //     try {
+            //         const token = await getAuthToken();
+            //         const response = await fetch(`${API_BASE_URL}/favorite/check/${productId}`, {
+            //             method: "GET",
+            //             headers: {
+            //                 Authorization: `Bearer ${token}`,
+            //             },
+            //         });
+            //         const data = await response.json();
+            //         setIsFavorite(data.isFavorite);
+            //     } catch (error) {
+            //         console.error("Lỗi khi kiểm tra sản phẩm yêu thích:", error);
+            //     }
+        };
+        fetchProductDetails();
+        checkIfFavorite();
     }, [productId]);
 
+    const handleFavoriteToggle = async () => {
+        try {
+            const token = await getAuthToken();
+            if (!token) return;
+
+            if (isFavorite) {// BƯỚC NÀY KHÔNG LÀM Ở ĐÂY !
+                //Xóa khỏi ds yêu thích
+                const response = await fetch(`${API_BASE_URL}/favorite/remove/${itemFavoriteProductId}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    setIsFavorite(false);
+                    setItemId(""); // Xóa itemId khi bỏ yêu thích
+                    Toast.show({
+                        type: "success",
+                        text1: "Đã bỏ yêu thích",
+                    });
+                } else {
+                    throw new Error(data.message);
+                }
+            } else {
+                // Thêm vào danh sách yêu thích
+                const response = await fetch(`${API_BASE_URL}/favorite/add-favorite-products`, {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ productId }),
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    setIsFavorite(true);
+                    const favoriteItems = data.favoriteProduct.items as {productId: string; _id: string}[];
+                    setItemId(favoriteItems.find(item => item.productId === productId)?._id || ""); // Lưu itemId để dùng khi cần xóa
+                    Toast.show({
+                        type: "success",
+                        text1: "Đã thêm vào danh sách yêu thích",
+                    });
+                } else {
+                    throw new Error(data.message);
+                }
+            }
+        } catch (error) {
+            console.error("Lỗi khi thay đổi trạng thái yêu thích:", error);
+            Toast.show({
+                type: "error",
+                text1: "Có lỗi xảy ra, vui lòng thử lại!",
+            });
+        }
+    };
+
     if (loading) {
-        return <ActivityIndicator size="large" color="#0000ff" />;
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#A67C52" />
+            </View>
+        );
     }
 
     if (!product) {
-        return <Text>Lỗi: Không tìm thấy sản phẩm</Text>;
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <Text>Không tìm thấy sản phẩm</Text>
+            </View>
+        );
     }
 
     return (
@@ -338,7 +433,15 @@ const ProductDetailScreen: React.FC = () => {
 
                     <View style={styles.productInfo}>
                         <Text style={styles.productName}>{product.name}</Text>
-                        <AntDesign name="hearto" size={24} color="#DC5D5D" style={styles.favoriteIcon} />
+
+                        <AntDesign
+                            name={isFavorite ? "heart" : "hearto"}
+                            size={24}
+                            color={isFavorite ? "#DC5D5D" : "#A9A9A9"}
+                            style={styles.favoriteIcon}
+                            onPress={handleFavoriteToggle}
+                        />
+
                         <Text style={styles.descriptionInput}>
                             {isExpanded || product.description.length <= maxLength
                                 ? product.description
@@ -544,7 +647,7 @@ const styles = StyleSheet.create({
     },
     favoriteIcon: {
         position: "absolute",
-        right: 10,
+        right: 20,
         top: 10,
         padding: 0
     },

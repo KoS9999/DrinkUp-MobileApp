@@ -30,7 +30,7 @@ exports.addToFavouriteProduct = async (req, res) => {
 
     try {
         const productObjectId = new mongoose.Types.ObjectId(productId);
-        
+
         const product = await Product.findById(productObjectId);
         if (!product) {
             return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
@@ -48,7 +48,7 @@ exports.addToFavouriteProduct = async (req, res) => {
         }
 
         // Kiểm tra xem sản phẩm đã có trong danh sách chưa
-        const isProductInFavorites = favoriteProduct.items.some(item => 
+        const isProductInFavorites = favoriteProduct.items.some(item =>
             item.productId.equals(productObjectId)
         );
 
@@ -67,3 +67,38 @@ exports.addToFavouriteProduct = async (req, res) => {
         res.status(500).json({ message: 'Lỗi server', details: error.message });
     }
 };
+
+exports.removeFromFavouriteProduct = async (req, res) => {
+    const { itemId } = req.params;
+    const userId = req.userId;
+
+    try {
+        let favoriteProductList = await FavoriteProduct.findOne({ userId });
+        if (!favoriteProductList) {
+            return res.status(404).json({ message: 'Danh sách sản phẩm yêu thích không tồn tại' });
+        }
+
+        const objectId = new mongoose.Types.ObjectId(itemId);
+
+        const itemIndex = favoriteProductList.items.findIndex(item => item._id.equals(objectId));
+        if (itemIndex === -1) {
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại trong danh sách sản phẩm yêu thích' });
+        }
+
+        //Xóa sản phẩm khỏi giỏ hàng
+        favoriteProductList.items.splice(itemIndex, 1);
+
+        // Nếu giỏ hàng trống, xóa luôn giỏ hàng
+        if (favoriteProductList.items.length === 0) {
+            await FavoriteProduct.deleteOne({ _id: favoriteProductList._id });
+            return res.status(200).json({ message: 'Danh sách sản phẩm yêu thích đã được xóa' });
+        } else {
+            await favoriteProductList.save();
+        }
+
+        res.status(200).json({ message: 'Sản phẩm đã được xóa khỏi danh sách sản phẩm yêu thích', favoriteProductList });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi server' });
+    }
+}
