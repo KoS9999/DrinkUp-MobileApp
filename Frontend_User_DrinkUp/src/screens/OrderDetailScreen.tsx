@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Button, TextInput } from "react-native";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RouteProp, useRoute } from "@react-navigation/native";
@@ -20,6 +20,8 @@ type OrderDetail = {
   toppings: Topping[];
   iceLevel: string;
   sweetLevel: string;
+  _id: string;
+
 };
 
 type OrderInfo = {
@@ -36,7 +38,14 @@ const OrderDetailScreen: React.FC = () => {
   const [order, setOrder] = useState<OrderInfo | null>(null);
   const [orderDetails, setOrderDetails] = useState<OrderDetail[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState<any>({}); 
+  const [isReviewing, setIsReviewing] = useState(false);
   const route = useRoute<RouteParams>();
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [ratings, setRatings] = useState<{ [key: string]: number }>({}); 
+  const [reviewTexts, setReviewTexts] = useState<{ [key: string]: string }>({}); 
+
+
 
   useEffect(() => {
     fetchOrderDetails();
@@ -64,6 +73,7 @@ const OrderDetailScreen: React.FC = () => {
       if (response.ok && data.order && data.orderDetails) {
         setOrder(data.order);
         setOrderDetails(data.orderDetails);
+        fetchReviews(data.orderDetails)
       } else {
         console.error("Lỗi lấy chi tiết đơn hàng:", data.error || "Dữ liệu không hợp lệ");
       }
@@ -73,8 +83,91 @@ const OrderDetailScreen: React.FC = () => {
       setLoading(false);
     }
   };
-  
 
+  const fetchReviews = async (orderDetails: OrderDetail[]) => {
+    const token = await AsyncStorage.getItem("userToken");
+    const reviewsData: any = {};
+
+    // Fetch reviews for each order detail
+    for (const detail of orderDetails) {
+      const response = await fetch(`${API_BASE_URL}/user/reviews/${detail._id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok && data.review) {
+        reviewsData[detail._id] = data.review; // Store review for this product
+      }
+    }
+
+    // Update state with the fetched reviews
+    setReviews(reviewsData);
+  };
+
+  const handleCreateOrUpdateReview = async (orderDetailId: string) => {
+    const token = await AsyncStorage.getItem("userToken");
+    if (!token) {
+      console.error("Lỗi: Không tìm thấy token!");
+      return;
+    }
+  
+    const reviewData = {
+      rating: ratings[orderDetailId] || 1, // Lấy rating cho sản phẩm này
+      reviewText: reviewTexts[orderDetailId] || "", // Lấy reviewText cho sản phẩm này
+    };
+  
+    const existingReview = reviews[orderDetailId];
+  
+    try {
+      let response;
+      if (existingReview) {
+        // Cập nhật đánh giá
+        response = await fetch(`${API_BASE_URL}/user/reviews/${existingReview._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            reviewId: existingReview._id,
+            rating: reviewData.rating,
+            reviewText: reviewData.reviewText,
+          }),
+        });
+      } else {
+        // Tạo mới đánh giá
+        response = await fetch(`${API_BASE_URL}/user/reviews`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            orderDetailId,
+            rating: reviewData.rating,
+            reviewText: reviewData.reviewText,
+          }),
+        });
+      }
+  
+      const data = await response.json();
+      console.log("API Response:", data);
+  
+      if (response.ok) {
+        console.log("Đánh giá đã được xử lý thành công:", data);
+        fetchReviews(orderDetails); // Tải lại các đánh giá
+        setIsReviewing(false);
+      } else {
+        console.error("Lỗi khi gửi đánh giá:", data?.error || "Lỗi không xác định");
+      }
+    } catch (error) {
+      console.error("Lỗi khi gửi yêu cầu API:", error);
+    }
+  };
   return (
     <View style={styles.container}>
       {loading ? (
@@ -93,7 +186,36 @@ const OrderDetailScreen: React.FC = () => {
               <Text style={styles.orderText}>📅 Ngày đặt: {new Date(order.createdAt).toLocaleDateString("vi-VN")}</Text>
             </View>
           )}
-          
+  
+          {/* Review Form */}
+          {isReviewing && selectedProductId && (
+            <View style={styles.reviewForm}>
+              <Text>🌟 Chọn đánh giá (1-5):</Text>
+              <TextInput
+                style={styles.ratingInput}
+                value={String(ratings[selectedProductId] || 1)} // Sử dụng rating cho sản phẩm được chọn
+                onChangeText={(text) => setRatings((prevRatings) => ({
+                  ...prevRatings,
+                  [selectedProductId]: Number(text), // Cập nhật rating cho sản phẩm hiện tại
+                }))}
+                keyboardType="numeric"
+              />
+              <Text>📝 Nhập đánh giá:</Text>
+              <TextInput
+                style={styles.reviewInput}
+                value={reviewTexts[selectedProductId] || ""} // Sử dụng reviewText cho sản phẩm được chọn
+                onChangeText={(text) => setReviewTexts((prevReviewTexts) => ({
+                  ...prevReviewTexts,
+                  [selectedProductId]: text, // Cập nhật reviewText cho sản phẩm hiện tại
+                }))}
+                multiline
+                placeholder="Nhập đánh giá của bạn..."
+              />
+              <Button title="Gửi đánh giá" onPress={() => handleCreateOrUpdateReview(selectedProductId)} />
+              <Button title="Hủy" onPress={() => setIsReviewing(false)} />
+            </View>
+          )}
+  
           <Text style={styles.sectionTitle}>🛒 Sản phẩm đã đặt</Text>
           <FlatList
             data={orderDetails}
@@ -101,7 +223,7 @@ const OrderDetailScreen: React.FC = () => {
             renderItem={({ item }) => {
               const toppingPrice = item.toppings.reduce((sum, topping) => sum + topping.price * topping.quantity, 0);
               const totalItemPrice = (item.price + toppingPrice) * item.quantity;
-
+  
               return (
                 <View style={styles.productCard}>
                   <Image source={{ uri: item.product.imageUrl }} style={styles.productImage} />
@@ -110,21 +232,29 @@ const OrderDetailScreen: React.FC = () => {
                     <Text style={styles.productDetails}>☕ Kích thước: {item.size}</Text>
                     <Text style={styles.productDetails}>🔢 Số lượng: {item.quantity}</Text>
                     <Text style={styles.productDetails}>🧊 Đá: {item.iceLevel} - 🍯 Đường: {item.sweetLevel}</Text>
-
-                    {/* Hiển thị danh sách toppings nếu có */}
+  
                     {item.toppings.length > 0 && (
-                        <View style={styles.toppingContainer}>
-                          <Text style={styles.toppingTitle}>🌟 Toppings:</Text>
-                          {item.toppings.map((topping) => (
-                            <Text key={topping._id} style={styles.toppingText}>
-                              + {topping.name} ({topping.price.toLocaleString()}đ) x{topping.quantity}
-                            </Text>
-                          ))}
-                        </View>
+                      <View style={styles.toppingContainer}>
+                        <Text style={styles.toppingTitle}>🌟 Toppings:</Text>
+                        {item.toppings.map((topping) => (
+                          <Text key={topping._id} style={styles.toppingText}>
+                            + {topping.name} ({topping.price.toLocaleString()}đ) x{topping.quantity}
+                          </Text>
+                        ))}
+                      </View>
                     )}
-
-
+  
                     <Text style={styles.productPrice}>💲 Giá tổng: {totalItemPrice.toLocaleString()}đ</Text>
+  
+                    <Button
+                      title={reviews[item._id] ? "Sửa đánh giá" : "Tạo đánh giá"}
+                      onPress={() => {
+                        setIsReviewing(true);
+                        setSelectedProductId(item._id); // Lưu lại ID sản phẩm để đánh giá
+                        setRatings({ ...ratings, [item._id]: reviews[item._id]?.rating || 1 });
+                        setReviewTexts({ ...reviewTexts, [item._id]: reviews[item._id]?.reviewText || "" });
+                      }}
+                    />
                   </View>
                 </View>
               );
@@ -188,6 +318,9 @@ const styles = StyleSheet.create({
   toppingTitle: { fontSize: 14, fontWeight: "bold", color: "#D2691E" },
   toppingText: { fontSize: 14, color: "#555" },
   productPrice: { fontSize: 16, fontWeight: "bold", color: "#D2691E", marginTop: 5 },
+  reviewForm: { padding: 20, backgroundColor: "#fff", marginTop: 10 },
+  ratingInput: { height: 40, borderColor: "#ccc", borderWidth: 1, marginBottom: 10, padding: 8 },
+  reviewInput: { height: 80, borderColor: "#ccc", borderWidth: 1, marginBottom: 10, padding: 8 },
 });
 
 export default OrderDetailScreen;

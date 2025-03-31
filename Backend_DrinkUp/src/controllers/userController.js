@@ -164,6 +164,7 @@ exports.getOrderHistory = async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
 exports.getOrderDetails = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -235,8 +236,6 @@ console.log("Order Details (Server):", JSON.stringify(orderDetails, null, 2));
   }
 };
 
-
-
 exports.handleCancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -274,46 +273,95 @@ exports.handleCancelOrder = async (req, res) => {
   }
 };
 
-
 exports.createReview = async (req, res) => {
   try {
-      const { userId, productId, rating, reviewText } = req.body;
-      const { orderDetailId } = req.params; 
+    const { orderDetailId, rating, reviewText } = req.body;
 
-      const orderDetail = await OrderDetail.findOne({ _id: orderDetailId, user: userId, product: productId });
-      if (!orderDetail) {
-          return res.status(400).json({ message: "Order detail not found or doesn't belong to this user." });
-      }
+    if (!orderDetailId || !rating || !reviewText) {
+      return res.status(400).json({ message: 'Order detail, rating and review text are required.' });
+    }
 
-      const existingReview = await Review.findOne({ user: userId, product: productId, orderDetail: orderDetailId });
-      if (existingReview) {
-          return res.status(400).json({ message: "You have already reviewed this product for this order." });
-      }
+    const orderDetail = await OrderDetail.findById(orderDetailId)
+      .populate({
+        path: 'orderId', 
+        populate: { path: 'user' } 
+      })
+      .populate('product'); 
 
-      const previousPurchase = await OrderDetail.findOne({ user: userId, product: productId });
-      if (!previousPurchase) {
-          return res.status(400).json({ message: "You must have purchased this product before in order to review it." });
-      }
+    if (!orderDetail) {
+      return res.status(404).json({ message: 'Order detail not found.' });
+    }
 
-      const newReview = new Review({
-          user: userId,
-          product: productId,
-          orderDetail: orderDetailId,
-          rating,
-          reviewText,
-      });
-      await newReview.save();
+    if (orderDetail.orderId.user._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only review products that you have purchased.' });
+    }
 
-      const user = await User.findById(userId);
-      if (user) {
-          user.points += 1000; 
-          await user.save();
-      }
+    const review = new Review({
+      user: req.user._id,
+      product: orderDetail.product._id,
+      orderDetail: orderDetail._id,
+      rating,
+      reviewText,
+    });
+    await review.save();
 
-      res.status(201).json({ message: "Review submitted successfully!", review: newReview });
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.points += 1000; 
+      await user.save();
+    }
+
+    return res.status(201).json({
+      message: 'Review created successfully and points added.',
+      review,
+    });
   } catch (error) {
-      res.status(500).json({ message: "Server error", error: error.message });
+    console.error(error);
+    return res.status(500).json({ message: 'Server error, unable to create review.' });
   }
 };
 
+exports.updateReview = async (req, res) => {
+  try {
+    const { reviewId, rating, reviewText } = req.body;
 
+    if (!reviewId || !rating || !reviewText) {
+      return res.status(400).json({ message: 'Review ID, rating, and review text are required.' });
+    }
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found.' });
+    }
+    if (review.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You can only update your own reviews.' });
+    }
+
+    review.rating = rating;
+    review.reviewText = reviewText;
+    review.updatedAt = Date.now(); 
+
+    await review.save();
+
+    return res.status(200).json({
+      message: 'Review updated successfully.',
+      review,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Server error, unable to update review.' });
+  }
+};
+
+exports.fetchReview = async (req, res) => {
+  try {
+    const { orderDetailId } = req.params; 
+    const review = await Review.findOne({ orderDetail: orderDetailId });
+
+    if (!review) {
+      return res.status(404).json({ message: "Review not found." });
+    }
+    res.status(200).json({ review });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};

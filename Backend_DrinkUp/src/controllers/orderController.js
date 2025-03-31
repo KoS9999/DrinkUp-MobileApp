@@ -3,6 +3,7 @@ const Cart = require('../models/Cart');
 const Coupon = require('../models/Coupon');
 const Branch = require('../models/Branch');
 const OrderDetail = require('../models/OrderDetail');
+const User = require('../models/User');
 
 exports.getBranches = async (req, res) => {
   try {
@@ -59,51 +60,35 @@ exports.applyCoupon = async (req, res) => {
 
 exports.redeemPoints = async (req, res) => {
   try {
-      const { points } = req.body;  
-      const userId = req.user.id;  
+    const { points } = req.body;
+    const userId = req.user.id;  
 
-      const user = await User.findById(userId);
+    if (!points || points < 1000 || points % 1000 !== 0) {
+      return res.status(400).json({ error: "Số điểm quy đổi phải là bội số của 1000" });
+    }
 
-      if (!user) {
-          return res.status(400).json({ error: "Người dùng không tồn tại" });
-      }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Người dùng không tồn tại" });
+    }
 
-      if (user.points < points) {
-          return res.status(400).json({ error: "Bạn không đủ điểm để quy đổi" });
-      }
+    if (points > user.points) {
+      return res.status(400).json({ error: `Bạn chỉ có ${user.points} điểm` });
+    }
 
-      // Tính giá trị quy đổi (1000 điểm = 5000 VND)
-      const discountValue = Math.floor(points / 1000) * 5000;
+    const discountValue = Math.floor(points / 1000) * 5000;
 
-      user.points -= points;
-      await user.save();
-
-      const cart = await Cart.findOne({ userId }).populate("items.productId");
-
-      if (!cart || cart.items.length === 0) {
-          return res.status(400).json({ error: "Giỏ hàng trống" });
-      }
-
-      const totalPrice = cart.items.reduce(
-          (sum, item) => sum + (item.productId.price[item.size] * item.quantity),
-          0
-      );
-
-      const finalPrice = Math.max(0, totalPrice - discountValue);
-
-      res.status(200).json({
-          success: true,
-          message: "Điểm đã được quy đổi thành công",
-          discountValue,
-          finalPrice,
-          remainingPoints: user.points, // Trả về số điểm còn lại
-      });
+    return res.status(200).json({
+      success: true,
+      discountValue,
+      availablePoints: user.points,
+      estimatedRemainingPoints: user.points - points,
+    });
   } catch (error) {
-      res.status(500).json({ error: "Lỗi khi quy đổi điểm" });
+    console.error("Lỗi khi xử lý quy đổi điểm:", error);
+    return res.status(500).json({ error: "Đã xảy ra lỗi nội bộ. Vui lòng thử lại sau." });
   }
 };
-
-
 
 exports.createOrder = async (req, res) => {
   try {
@@ -115,7 +100,7 @@ exports.createOrder = async (req, res) => {
       return res.status(401).json({ error: "Người dùng chưa đăng nhập" });
     }
 
-    const { orderType, branchId, deliveryAddress, couponCode, paymentMethod, note } = req.body;
+    const { orderType, branchId, deliveryAddress, couponCode, paymentMethod, note, redeemPoints } = req.body;
 
     console.log("Dữ liệu đặt hàng:", { orderType, branchId, deliveryAddress, couponCode, paymentMethod, note });
 
@@ -165,8 +150,20 @@ exports.createOrder = async (req, res) => {
       discountPrice = coupon.discountValue;
     }
 
-    const finalPrice = Math.max(0, totalPrice - discountPrice);
-    console.log(`💰 Tổng tiền: ${totalPrice} - Giảm giá: ${discountPrice} = ${finalPrice}`);
+    const discountValueFromPoints = Math.floor(redeemPoints / 1000) * 5000; 
+    const finalPrice = Math.max(0, totalPrice - discountPrice - discountValueFromPoints); 
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Người dùng không tồn tại" });
+    }
+
+    if (redeemPoints > user.points) {
+      return res.status(400).json({ error: "Bạn không đủ điểm để quy đổi" });
+    }
+
+    user.points -= redeemPoints; 
+    await user.save();
 
     if (orderType === "pickup" && !branchId) {
       console.error("Chưa chọn chi nhánh!");
