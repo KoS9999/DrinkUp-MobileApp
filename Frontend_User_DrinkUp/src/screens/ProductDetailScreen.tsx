@@ -9,6 +9,7 @@ import Toast from "react-native-toast-message";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { useFocusEffect } from '@react-navigation/native';
+import SimilarProductsList from "../components/SimilarProductsList";
 
 interface Topping {
     _id: string;
@@ -50,8 +51,6 @@ interface RouteParams {
     };
     isEditing: boolean;
 }
-
-type ProductDetailRouteProp = StackNavigationProp<RootStackParamList, "ProductDetailScreen">;
 
 const getAuthToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
@@ -449,17 +448,24 @@ const ProductDetailScreen: React.FC = () => {
                         />
 
                         <Text style={styles.descriptionInput}>
-                            {isExpanded || product.description.length <= maxLength
-                                ? product.description
-                                : `${product.description.slice(0, maxLength)}... `}
+                            {product.description
+                                ? (
+                                    <>
+                                        {isExpanded || product.description.length <= maxLength
+                                            ? product.description
+                                            : `${product.description.slice(0, maxLength)}... `}
 
-                            {product.description.length > maxLength && (
-                                <TouchableOpacity onPress={toggleExpand}>
-                                    <Text style={styles.expandText}>
-                                        {isExpanded ? "Thu gọn" : "Xem thêm"}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
+                                        {product.description.length > maxLength && (
+                                            <TouchableOpacity onPress={toggleExpand}>
+                                                <Text style={styles.expandText}>
+                                                    {isExpanded ? "Thu gọn" : "Xem thêm"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </>
+                                )
+                                : <Text style={{ fontStyle: 'italic', color: '#888' }}>Không có mô tả cho sản phẩm này</Text>
+                            }
                         </Text>
                     </View>
                 </View>
@@ -609,7 +615,7 @@ const ProductDetailScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.similarProductsContainer}>
-                    <Text>SẢN PHẨM TƯƠNG TỰ</Text>
+                    <SimilarProductsList productId={productId} />
                 </View>
             </ScrollView>
 
