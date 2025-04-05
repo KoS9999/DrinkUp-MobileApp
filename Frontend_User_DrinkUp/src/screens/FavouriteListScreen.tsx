@@ -9,7 +9,7 @@ const Tab = createMaterialTopTabNavigator();
 
 const FavouriteListScreen = () => {
   return (
-    <View style={{ flex: 1 }}> {/* Đảm bảo layout không bị lỗi */}
+    <View style={{ flex: 1 }}> 
       <Appbar.Header>
         <Appbar.Content title="Danh sách yêu thích của bạn" />
       </Appbar.Header>
@@ -18,7 +18,7 @@ const FavouriteListScreen = () => {
         screenOptions={{
           tabBarLabelStyle: { fontSize: 14, fontWeight: "bold" },
           tabBarStyle: { backgroundColor: "#fff" },
-          tabBarIndicatorStyle: { backgroundColor: "#A67C52", height: 3 }, // Gạch chân tab
+          tabBarIndicatorStyle: { backgroundColor: "#A67C52", height: 3 },
         }}
       >
         <Tab.Screen name="Cửa hàng yêu thích" component={FavoriteStoresScreen} />

@@ -79,8 +79,28 @@ const getReviewsByProductId = async (req, res) => {
     }
 };
 
+const getSimilarProducts = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+    
+        if (!product) return res.status(404).json({ message: 'Product not found' });
+    
+        // Lấy sản phẩm cùng category, loại bỏ chính nó
+        const similarProducts = await Product.find({
+          _id: { $ne: product._id },
+          category: product.category,
+        }).limit(6); // Giới hạn 6 sản phẩm
+    
+        res.json(similarProducts);
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+      }
+}
+
 module.exports = {
     findProductById,
     countCustomersByProductId,
-    getReviewsByProductId
+    getReviewsByProductId,
+    getSimilarProducts
 };

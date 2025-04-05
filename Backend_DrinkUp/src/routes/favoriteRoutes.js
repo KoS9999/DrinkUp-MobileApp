@@ -4,7 +4,8 @@ const { authenticate } = require('../middlewares/authMiddleware');
 const favouriteController = require('../controllers/favoriteController');
 
 router.get('/favorite-products', authenticate, favouriteController.getFavouriteProduct);
-router.post('/add-favorite-products', authenticate, favouriteController.addToFavouriteProduct);
-router.delete('/remove/:itemId', authenticate, favouriteController.removeFromFavouriteProduct); 
+router.post('/toggle-favorite-products', authenticate, favouriteController.addToFavouriteProduct);
+router.get('/check/:productId', authenticate, favouriteController.checkFavoriteProduct);
+// router.delete('/remove/:itemFavoriteProductId', authenticate, favouriteController.removeFromFavouriteProduct); 
 
 module.exports = router;

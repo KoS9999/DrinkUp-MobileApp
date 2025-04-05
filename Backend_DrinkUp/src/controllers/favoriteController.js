@@ -47,13 +47,23 @@ exports.addToFavouriteProduct = async (req, res) => {
             return res.status(201).json({ message: 'Đã thêm vào danh sách sản phẩm yêu thích', favoriteProduct });
         }
 
-        // Kiểm tra xem sản phẩm đã có trong danh sách chưa
-        const isProductInFavorites = favoriteProduct.items.some(item =>
+        // Kiểm tra nếu sản phẩm đã tồn tại trong danh sách yêu thích
+        const itemIndex = favoriteProduct.items.findIndex(item =>
             item.productId.equals(productObjectId)
         );
 
-        if (isProductInFavorites) {
-            return res.status(409).json({ message: 'Đã có trong danh sách sản phẩm yêu thích' });
+        if (itemIndex !== -1) {
+            // Nếu có -> xóa khỏi danh sách
+            favoriteProduct.items.splice(itemIndex, 1);
+
+            // Nếu danh sách rỗng sau khi xóa -> xóa document luôn
+            if (favoriteProduct.items.length === 0) {
+                await FavoriteProduct.deleteOne({ _id: favoriteProduct._id });
+                return res.status(200).json({ message: 'Sản phẩm đã bị gỡ khỏi danh sách yêu thích và danh sách hiện đang trống' });
+            }
+
+            await favoriteProduct.save();
+            return res.status(200).json({ message: 'Sản phẩm đã bị gỡ khỏi danh sách yêu thích', favoriteProduct });
         }
 
         // Nếu chưa có, thêm sản phẩm vào danh sách
@@ -68,37 +78,57 @@ exports.addToFavouriteProduct = async (req, res) => {
     }
 };
 
-exports.removeFromFavouriteProduct = async (req, res) => {
-    const { itemId } = req.params;
-    const userId = req.userId;
-
+exports.checkFavoriteProduct = async (req, res) => {
     try {
-        let favoriteProductList = await FavoriteProduct.findOne({ userId });
-        if (!favoriteProductList) {
-            return res.status(404).json({ message: 'Danh sách sản phẩm yêu thích không tồn tại' });
+        const userId = req.userId;
+        const { productId } = req.params;
+
+        const favorite = await FavoriteProduct.findOne({ userId });
+
+        if (!favorite) {
+            return res.status(200).json({ isFavorite: false });
         }
 
-        const objectId = new mongoose.Types.ObjectId(itemId);
+        const isFavorite = favorite.items.some(item => item.productId === productId);
 
-        const itemIndex = favoriteProductList.items.findIndex(item => item._id.equals(objectId));
-        if (itemIndex === -1) {
-            return res.status(404).json({ message: 'Sản phẩm không tồn tại trong danh sách sản phẩm yêu thích' });
-        }
-
-        //Xóa sản phẩm khỏi giỏ hàng
-        favoriteProductList.items.splice(itemIndex, 1);
-
-        // Nếu giỏ hàng trống, xóa luôn giỏ hàng
-        if (favoriteProductList.items.length === 0) {
-            await FavoriteProduct.deleteOne({ _id: favoriteProductList._id });
-            return res.status(200).json({ message: 'Danh sách sản phẩm yêu thích đã được xóa' });
-        } else {
-            await favoriteProductList.save();
-        }
-
-        res.status(200).json({ message: 'Sản phẩm đã được xóa khỏi danh sách sản phẩm yêu thích', favoriteProductList });
+        return res.status(200).json({ isFavorite });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Lỗi server' });
+        console.error("Lỗi khi kiểm tra yêu thích:", error);
+        return res.status(500).json({ message: "Lỗi server khi kiểm tra yêu thích" });
     }
-}
+};
+
+// exports.removeFromFavouriteProduct = async (req, res) => {
+//     const { itemFavoriteProductId } = req.params;
+//     const userId = req.userId;
+
+//     try {
+//         let favoriteProductList = await FavoriteProduct.findOne({ userId });
+//         if (!favoriteProductList) {
+//             return res.status(404).json({ message: 'Danh sách sản phẩm yêu thích không tồn tại' });
+//         }
+
+//         const objectId = new mongoose.Types.ObjectId(itemFavoriteProductId);
+
+//         const itemIndex = favoriteProductList.items.findIndex(item => item._id.equals(objectId));
+//         if (itemIndex === -1) {
+//             return res.status(404).json({ message: 'Sản phẩm không tồn tại trong danh sách sản phẩm yêu thích' });
+//         }
+
+//         //Xóa sản phẩm khỏi giỏ hàng
+//         favoriteProductList.items.splice(itemIndex, 1);
+
+//         // Nếu giỏ hàng trống, xóa luôn giỏ hàng
+//         if (favoriteProductList.items.length === 0) {
+//             await FavoriteProduct.deleteOne({ _id: favoriteProductList._id });
+//             return res.status(200).json({ message: 'Danh sách sản phẩm yêu thích đã được xóa' });
+//         } else {
+//             await favoriteProductList.save();
+//         }
+
+//         res.status(200).json({ message: 'Sản phẩm đã được xóa khỏi danh sách sản phẩm yêu thích', favoriteProductList });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: 'Lỗi server' });
+//     }
+// }

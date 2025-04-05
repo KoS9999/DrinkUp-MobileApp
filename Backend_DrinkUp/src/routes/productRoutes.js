@@ -11,4 +11,7 @@ router.get('/product/:id/customers', productController.countCustomersByProductId
 // Route lấy bình luận của sản phẩm
 router.get('/product/:id/reviews', productController.getReviewsByProductId);
 
+//Route lấy sản phẩm tương tự
+router.get('/get-similar-products/:id', productController.getSimilarProducts);
+
 module.exports = router;

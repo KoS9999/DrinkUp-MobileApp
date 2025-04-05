@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, TextInput, StyleSheet, ScrollView } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { AntDesign } from "@expo/vector-icons";
@@ -8,6 +8,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
+import { useFocusEffect } from '@react-navigation/native';
+
 interface Topping {
     _id: string;
     name: string;
@@ -23,6 +25,10 @@ interface Product {
     toppings: Topping[];
     quantity: number;
 }
+interface FavoriteItem {
+    _id: string;
+    productId: string;
+};
 
 interface RouteParams {
     productId: string;
@@ -321,77 +327,76 @@ const ProductDetailScreen: React.FC = () => {
                 setLoading(false)
             };
         }
-
-        const checkIfFavorite = async () => {
-            //     try {
-            //         const token = await getAuthToken();
-            //         const response = await fetch(`${API_BASE_URL}/favorite/check/${productId}`, {
-            //             method: "GET",
-            //             headers: {
-            //                 Authorization: `Bearer ${token}`,
-            //             },
-            //         });
-            //         const data = await response.json();
-            //         setIsFavorite(data.isFavorite);
-            //     } catch (error) {
-            //         console.error("Lỗi khi kiểm tra sản phẩm yêu thích:", error);
-            //     }
-        };
         fetchProductDetails();
-        checkIfFavorite();
     }, [productId]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const checkIfFavorite = async () => {
+                try {
+                    const token = await getAuthToken();
+                    const response = await fetch(`${API_BASE_URL}/favorite/check/${productId}`, {
+                        method: "GET",
+                        headers: {
+                            "Accept": "application/json",
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                    });
+
+                    const data = await response.json();
+                    setIsFavorite(data.isFavorite);
+                    console.log("📌 Trạng thái yêu thích:", data.isFavorite, "| Product ID:", productId);
+                } catch (error) {
+                    console.error("Lỗi khi kiểm tra sản phẩm yêu thích:", error);
+                }
+            };
+
+            checkIfFavorite();
+        }, [productId])
+    );
 
     const handleFavoriteToggle = async () => {
         try {
             const token = await getAuthToken();
             if (!token) return;
 
-            if (isFavorite) {// BƯỚC NÀY KHÔNG LÀM Ở ĐÂY !
-                //Xóa khỏi ds yêu thích
-                const response = await fetch(`${API_BASE_URL}/favorite/remove/${itemFavoriteProductId}`, {
-                    method: "DELETE",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                });
+            const response = await fetch(`${API_BASE_URL}/favorite/toggle-favorite-products`, {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ productId }),
+            });
 
-                const data = await response.json();
-                if (response.ok) {
-                    setIsFavorite(false);
-                    setItemId(""); // Xóa itemId khi bỏ yêu thích
-                    Toast.show({
-                        type: "success",
-                        text1: "Đã bỏ yêu thích",
-                    });
-                } else {
-                    throw new Error(data.message);
-                }
-            } else {
-                // Thêm vào danh sách yêu thích
-                const response = await fetch(`${API_BASE_URL}/favorite/add-favorite-products`, {
-                    method: "POST",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ productId }),
-                });
+            const data = await response.json();
 
-                const data = await response.json();
-                if (response.ok) {
+            if (response.ok) {
+                const favoriteItems = (data.favoriteProduct?.items ?? []) as FavoriteItem[];
+
+                const foundItem = favoriteItems.find(item => item.productId === productId);
+
+                if (foundItem) {
+                    // Sau khi gọi toggle thì product được thêm
                     setIsFavorite(true);
-                    const favoriteItems = data.favoriteProduct.items as {productId: string; _id: string}[];
-                    setItemId(favoriteItems.find(item => item.productId === productId)?._id || ""); // Lưu itemId để dùng khi cần xóa
+                    setItemId(foundItem._id);
                     Toast.show({
                         type: "success",
                         text1: "Đã thêm vào danh sách yêu thích",
                     });
                 } else {
-                    throw new Error(data.message);
+                    // Sau khi gọi toggle thì product bị xóa
+                    setIsFavorite(false);
+                    setItemId("");
+                    Toast.show({
+                        type: "success",
+                        text1: "Đã bỏ yêu thích",
+                    });
                 }
+            } else {
+                throw new Error(data.message);
             }
         } catch (error) {
             console.error("Lỗi khi thay đổi trạng thái yêu thích:", error);
@@ -401,6 +406,7 @@ const ProductDetailScreen: React.FC = () => {
             });
         }
     };
+
 
     if (loading) {
         return (
@@ -569,40 +575,45 @@ const ProductDetailScreen: React.FC = () => {
                     })}
                 </View>
 
-            </ScrollView>
-
-            <View style={styles.quantityContainer}>
-                <View style={{ flexDirection: "column" }}>
-                    <Text style={{ color: '#0A1858' }}> {quantity} sản phẩm</Text>
-                    <Text style={{ paddingLeft: 5, marginTop: 5, color: '#0A1858', fontSize: 20, fontWeight: "600" }}>{totalPrice.toLocaleString('vi-VN')} đ</Text>
-                </View>
-                {/* <View style = {{flexDirection: "column"}}>
+                <View style={styles.quantityContainer}>
+                    <View style={{ flexDirection: "column" }}>
+                        <Text style={{ color: '#0A1858' }}> {quantity} sản phẩm</Text>
+                        <Text style={{ paddingLeft: 5, marginTop: 5, color: '#0A1858', fontSize: 20, fontWeight: "600" }}>{totalPrice.toLocaleString('vi-VN')} đ</Text>
+                    </View>
+                    {/* <View style = {{flexDirection: "column"}}>
                     <Text style = {{marginBottom: 10}}>Số lượng</Text>
                     <Text>Thành tiền</Text>
                 </View> */}
-                <View style={styles.quantityControl}>
-                    <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                        <AntDesign name="minuscircleo" size={24} color="black" />
-                    </TouchableOpacity>
+                    <View style={styles.quantityControl}>
+                        <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                            <AntDesign name="minuscircleo" size={24} color="black" />
+                        </TouchableOpacity>
 
-                    <Text style={styles.quantityText}>{quantity}</Text>
+                        <Text style={styles.quantityText}>{quantity}</Text>
 
-                    <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                        <AntDesign name="pluscircleo" size={24} color="black" />
+                        <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                            <AntDesign name="pluscircleo" size={24} color="black" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.quantityContainer}>
+                    <TouchableOpacity
+                        style={styles.addToCartButton}
+                        onPress={isEditing ? handleUpdateCart : handleAddToCart}
+                    >
+                        <Text style={styles.addToCartText}>
+                            {isEditing ? "Cập nhật món" : "Thêm vào giỏ hàng"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
-            </View>
 
-            <View style={styles.quantityContainer}>
-                <TouchableOpacity
-                    style={styles.addToCartButton}
-                    onPress={isEditing ? handleUpdateCart : handleAddToCart}
-                >
-                    <Text style={styles.addToCartText}>
-                        {isEditing ? "Cập nhật món" : "Thêm vào giỏ hàng"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+                <View style={styles.similarProductsContainer}>
+                    <Text>SẢN PHẨM TƯƠNG TỰ</Text>
+                </View>
+            </ScrollView>
+
+
         </View>
 
     );
@@ -709,6 +720,13 @@ const styles = StyleSheet.create({
     },
     quantityContainer: {
         backgroundColor: "#E6EFE6",
+        padding: 10,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    similarProductsContainer: {
+        backgroundColor: "white",
         padding: 10,
         flexDirection: "row",
         justifyContent: "space-between",
