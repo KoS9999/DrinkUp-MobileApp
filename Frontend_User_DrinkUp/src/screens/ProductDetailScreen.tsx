@@ -10,6 +10,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { useFocusEffect } from '@react-navigation/native';
 import SimilarProductsList from "../components/SimilarProductsList";
+import { saveViewedProduct } from "../config/storageUtils";
 
 interface Topping {
     _id: string;
@@ -123,6 +124,10 @@ const ProductDetailScreen: React.FC = () => {
     //Tính tổng giá tiền
     useEffect(() => {
         if (!product) return;
+
+        if (product) {
+            saveViewedProduct(product); // Lưu sản phẩm đã xem
+        }
 
         const sizePrice = product.price[selectedSize] || 0;
         const toppingPrice = selectedTopping.reduce((sum, topping) => {

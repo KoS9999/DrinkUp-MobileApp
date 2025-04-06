@@ -43,6 +43,7 @@ const FavoriteProductsScreen = () => {
 
     // Dùng useCallback để tránh tạo lại hàm trong mỗi lần render
     const fetchFavoriteProducts = useCallback(async () => {
+        console.log("🔄 fetchFavoriteProducts được gọi");
         try {
             setLoading(true);
             const token = await getAuthToken();
@@ -66,11 +67,18 @@ const FavoriteProductsScreen = () => {
 
             const extractedProducts: Product[] = data.items
                 .map((item) => item.productId)
-                .filter((product): product is Product => Boolean(product && product._id));
-
+                .filter(
+                    (product): product is Product =>
+                        product !== null &&
+                        typeof product === "object" &&
+                        typeof product._id === "string" &&
+                        product._id.trim() !== ""
+                )
+            console.log("Danh sách SPYT sau lọc:", extractedProducts);
             setFavoriteProducts(extractedProducts);
+
         } catch (error) {
-            console.error("Lỗi khi lấy danh sách sản phẩm yêu thích: ", error);
+            // console.error("Lỗi khi lấy danh sách sản phẩm yêu thích: ", error);
         } finally {
             setLoading(false);
         }
@@ -97,7 +105,10 @@ const FavoriteProductsScreen = () => {
                 <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>Bạn chưa yêu thích sản phẩm nào</Text>
                     <Image source={require('../assets/images/empty.png')} style={styles.image} />
-                    <TouchableOpacity style={styles.button}>
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={() => navigation.navigate('SearchScreen')}  // Thêm dòng này để chuyển trang
+                    >
                         <Text style={styles.buttonText}>THÊM SẢN PHẨM YÊU THÍCH</Text>
                     </TouchableOpacity>
                 </View>

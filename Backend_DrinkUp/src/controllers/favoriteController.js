@@ -17,6 +17,10 @@ exports.getFavouriteProduct = async (req, res) => {
 
         console.log('FavoriteProduct data: ', favoriteProduct);
 
+        if (!favoriteProduct) {
+            return res.status(200).json({ items: [] }); 
+        }
+
         res.status(200).json(favoriteProduct);
     } catch (error) {
         console.error('Lỗi khi lấy danh sách sp yêu thích: ', error);

@@ -7,10 +7,11 @@ import { View } from "react-native";
 
 const Tab = createMaterialTopTabNavigator();
 
-const FavouriteListScreen = () => {
+const FavouriteListScreen = ({navigation}: any) => {
   return (
     <View style={{ flex: 1 }}> 
       <Appbar.Header>
+        <Appbar.BackAction onPress={() => navigation.navigate('AccountScreen')} />
         <Appbar.Content title="Danh sách yêu thích của bạn" />
       </Appbar.Header>
       
