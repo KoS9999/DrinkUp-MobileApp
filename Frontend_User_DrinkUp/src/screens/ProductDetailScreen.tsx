@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, TextInput, StyleSheet, ScrollView } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { AntDesign } from "@expo/vector-icons";
@@ -8,6 +8,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
+import { useFocusEffect } from '@react-navigation/native';
+import SimilarProductsList from "../components/SimilarProductsList";
+import { saveViewedProduct } from "../config/storageUtils";
+
 interface Topping {
     _id: string;
     name: string;
@@ -23,6 +27,10 @@ interface Product {
     toppings: Topping[];
     quantity: number;
 }
+interface FavoriteItem {
+    _id: string;
+    productId: string;
+};
 
 interface RouteParams {
     productId: string;
@@ -44,8 +52,6 @@ interface RouteParams {
     };
     isEditing: boolean;
 }
-
-type ProductDetailRouteProp = StackNavigationProp<RootStackParamList, "ProductDetailScreen">;
 
 const getAuthToken = async () => {
     const token = await AsyncStorage.getItem("userToken");
@@ -69,7 +75,9 @@ const ProductDetailScreen: React.FC = () => {
 
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
-    
+    const [isFavorite, setIsFavorite] = useState<boolean>(false);
+    const [itemFavoriteProductId, setItemFavoriteProductId] = useState<string>("");
+
     const [itemId, setItemId] = useState<string>(
         cartItem?.cartItemId ?? null
     );
@@ -116,6 +124,10 @@ const ProductDetailScreen: React.FC = () => {
     //Tính tổng giá tiền
     useEffect(() => {
         if (!product) return;
+
+        if (product) {
+            saveViewedProduct(product); // Lưu sản phẩm đã xem
+        }
 
         const sizePrice = product.price[selectedSize] || 0;
         const toppingPrice = selectedTopping.reduce((sum, topping) => {
@@ -245,7 +257,7 @@ const ProductDetailScreen: React.FC = () => {
 
         if (!itemId) {
             console.error("❌ Lỗi: Không tìm thấy itemId khi cập nhật.");
-        } else{
+        } else {
             console.log("itemdId: ", itemId);
         }
 
@@ -298,29 +310,122 @@ const ProductDetailScreen: React.FC = () => {
 
 
     useEffect(() => {
-        fetch(`${API_BASE_URL}/product/get-product/${productId}`)
-            .then((res) => res.json())
-            .then((data) => {
-                console.log("Fetched data:", data);
-                console.log("ID san pham: ", data.product._id);
+        const fetchProductDetails = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/product/get-product/${productId}`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        console.log("Fetched data:", data);
+                        console.log("ID san pham: ", data.product._id);
 
-                if (data?.success) {
-                    setProduct(data.product);
-                    // setSelectedSweet(data.sweetLevels);
-                    // setSelectedIce(data.iceLevels);
-                    console.log("Received productId:", productId);
-                }
-            })
-            .catch((error) => console.error("Lỗi khi lấy chi tiết sản phẩm:", error))
-            .finally(() => setLoading(false));
+                        if (data?.success) {
+                            setProduct(data.product);
+                            // setSelectedSweet(data.sweetLevels);
+                            // setSelectedIce(data.iceLevels);
+                            console.log("Received productId:", productId);
+                        }
+                    })
+            } catch (error) {
+                console.error("Lỗi khi lấy chi tiết sản phẩm:", error);
+            } finally {
+                setLoading(false)
+            };
+        }
+        fetchProductDetails();
     }, [productId]);
 
+    useFocusEffect(
+        useCallback(() => {
+            const checkIfFavorite = async () => {
+                try {
+                    const token = await getAuthToken();
+                    const response = await fetch(`${API_BASE_URL}/favorite/check/${productId}`, {
+                        method: "GET",
+                        headers: {
+                            "Accept": "application/json",
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+                    });
+
+                    const data = await response.json();
+                    setIsFavorite(data.isFavorite);
+                    console.log("📌 Trạng thái yêu thích:", data.isFavorite, "| Product ID:", productId);
+                } catch (error) {
+                    console.error("Lỗi khi kiểm tra sản phẩm yêu thích:", error);
+                }
+            };
+
+            checkIfFavorite();
+        }, [productId])
+    );
+
+    const handleFavoriteToggle = async () => {
+        try {
+            const token = await getAuthToken();
+            if (!token) return;
+
+            const response = await fetch(`${API_BASE_URL}/favorite/toggle-favorite-products`, {
+                method: "POST",
+                headers: {
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ productId }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                const favoriteItems = (data.favoriteProduct?.items ?? []) as FavoriteItem[];
+
+                const foundItem = favoriteItems.find(item => item.productId === productId);
+
+                if (foundItem) {
+                    // Sau khi gọi toggle thì product được thêm
+                    setIsFavorite(true);
+                    setItemId(foundItem._id);
+                    Toast.show({
+                        type: "success",
+                        text1: "Đã thêm vào danh sách yêu thích",
+                    });
+                } else {
+                    // Sau khi gọi toggle thì product bị xóa
+                    setIsFavorite(false);
+                    setItemId("");
+                    Toast.show({
+                        type: "success",
+                        text1: "Đã bỏ yêu thích",
+                    });
+                }
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error("Lỗi khi thay đổi trạng thái yêu thích:", error);
+            Toast.show({
+                type: "error",
+                text1: "Có lỗi xảy ra, vui lòng thử lại!",
+            });
+        }
+    };
+
+
     if (loading) {
-        return <ActivityIndicator size="large" color="#0000ff" />;
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <ActivityIndicator size="large" color="#A67C52" />
+            </View>
+        );
     }
 
     if (!product) {
-        return <Text>Lỗi: Không tìm thấy sản phẩm</Text>;
+        return (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <Text>Không tìm thấy sản phẩm</Text>
+            </View>
+        );
     }
 
     return (
@@ -338,19 +443,34 @@ const ProductDetailScreen: React.FC = () => {
 
                     <View style={styles.productInfo}>
                         <Text style={styles.productName}>{product.name}</Text>
-                        <AntDesign name="hearto" size={24} color="#DC5D5D" style={styles.favoriteIcon} />
-                        <Text style={styles.descriptionInput}>
-                            {isExpanded || product.description.length <= maxLength
-                                ? product.description
-                                : `${product.description.slice(0, maxLength)}... `}
 
-                            {product.description.length > maxLength && (
-                                <TouchableOpacity onPress={toggleExpand}>
-                                    <Text style={styles.expandText}>
-                                        {isExpanded ? "Thu gọn" : "Xem thêm"}
-                                    </Text>
-                                </TouchableOpacity>
-                            )}
+                        <AntDesign
+                            name={isFavorite ? "heart" : "hearto"}
+                            size={24}
+                            color={isFavorite ? "#DC5D5D" : "#A9A9A9"}
+                            style={styles.favoriteIcon}
+                            onPress={handleFavoriteToggle}
+                        />
+
+                        <Text style={styles.descriptionInput}>
+                            {product.description
+                                ? (
+                                    <>
+                                        {isExpanded || product.description.length <= maxLength
+                                            ? product.description
+                                            : `${product.description.slice(0, maxLength)}... `}
+
+                                        {product.description.length > maxLength && (
+                                            <TouchableOpacity onPress={toggleExpand}>
+                                                <Text style={styles.expandText}>
+                                                    {isExpanded ? "Thu gọn" : "Xem thêm"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </>
+                                )
+                                : <Text style={{ fontStyle: 'italic', color: '#888' }}>Không có mô tả cho sản phẩm này</Text>
+                            }
                         </Text>
                     </View>
                 </View>
@@ -466,40 +586,45 @@ const ProductDetailScreen: React.FC = () => {
                     })}
                 </View>
 
-            </ScrollView>
-
-            <View style={styles.quantityContainer}>
-                <View style={{ flexDirection: "column" }}>
-                    <Text style={{ color: '#0A1858' }}> {quantity} sản phẩm</Text>
-                    <Text style={{ paddingLeft: 5, marginTop: 5, color: '#0A1858', fontSize: 20, fontWeight: "600" }}>{totalPrice.toLocaleString('vi-VN')} đ</Text>
-                </View>
-                {/* <View style = {{flexDirection: "column"}}>
+                <View style={styles.quantityContainer}>
+                    <View style={{ flexDirection: "column" }}>
+                        <Text style={{ color: '#0A1858' }}> {quantity} sản phẩm</Text>
+                        <Text style={{ paddingLeft: 5, marginTop: 5, color: '#0A1858', fontSize: 20, fontWeight: "600" }}>{totalPrice.toLocaleString('vi-VN')} đ</Text>
+                    </View>
+                    {/* <View style = {{flexDirection: "column"}}>
                     <Text style = {{marginBottom: 10}}>Số lượng</Text>
                     <Text>Thành tiền</Text>
                 </View> */}
-                <View style={styles.quantityControl}>
-                    <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                        <AntDesign name="minuscircleo" size={24} color="black" />
-                    </TouchableOpacity>
+                    <View style={styles.quantityControl}>
+                        <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                            <AntDesign name="minuscircleo" size={24} color="black" />
+                        </TouchableOpacity>
 
-                    <Text style={styles.quantityText}>{quantity}</Text>
+                        <Text style={styles.quantityText}>{quantity}</Text>
 
-                    <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
-                        <AntDesign name="pluscircleo" size={24} color="black" />
+                        <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+                            <AntDesign name="pluscircleo" size={24} color="black" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={styles.quantityContainer}>
+                    <TouchableOpacity
+                        style={styles.addToCartButton}
+                        onPress={isEditing ? handleUpdateCart : handleAddToCart}
+                    >
+                        <Text style={styles.addToCartText}>
+                            {isEditing ? "Cập nhật món" : "Thêm vào giỏ hàng"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
-            </View>
 
-            <View style={styles.quantityContainer}>
-                <TouchableOpacity
-                    style={styles.addToCartButton}
-                    onPress={isEditing ? handleUpdateCart : handleAddToCart}
-                >
-                    <Text style={styles.addToCartText}>
-                        {isEditing ? "Cập nhật món" : "Thêm vào giỏ hàng"}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+                <View style={styles.similarProductsContainer}>
+                    <SimilarProductsList productId={productId} />
+                </View>
+            </ScrollView>
+
+
         </View>
 
     );
@@ -544,7 +669,7 @@ const styles = StyleSheet.create({
     },
     favoriteIcon: {
         position: "absolute",
-        right: 10,
+        right: 20,
         top: 10,
         padding: 0
     },
@@ -606,6 +731,13 @@ const styles = StyleSheet.create({
     },
     quantityContainer: {
         backgroundColor: "#E6EFE6",
+        padding: 10,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    similarProductsContainer: {
+        backgroundColor: "white",
         padding: 10,
         flexDirection: "row",
         justifyContent: "space-between",

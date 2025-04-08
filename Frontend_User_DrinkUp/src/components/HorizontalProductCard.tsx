@@ -28,7 +28,7 @@ const HorizontalProductCard: React.FC<ProductCardProps> = ({ product }) => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const [isExpanded, setIsExpanded] = useState(false);
     const maxLength = 50;
-
+    
     return (
         <TouchableOpacity
             style={styles.productContainer}
