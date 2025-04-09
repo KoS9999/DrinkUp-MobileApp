@@ -5,6 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { FontAwesome5, FontAwesome, Entypo } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import socket from '../config/socket';
 import { API_BASE_URL } from "../config/api";
 
 type LoginScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
@@ -24,14 +25,12 @@ const LoginScreen = () => {
     }
   
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`,{
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         if (errorData.message === 'Không tìm thấy người dùng') {
@@ -46,11 +45,24 @@ const LoginScreen = () => {
   
       const data = await response.json();
       console.log('Login successful:', data);
+  
       setError('');
+  
       await AsyncStorage.setItem('isLoggedIn', 'true');
       await AsyncStorage.setItem('userToken', data.token);
       await AsyncStorage.setItem('userName', data.user.name);
-
+      await AsyncStorage.setItem('user', JSON.stringify(data.user)); 
+  
+      if (!socket.connected) {
+        socket.connect();
+      }
+  
+      const userId = data.user._id || data.user.id;
+      if (userId) {
+        socket.emit('join', userId);
+        console.log('📲 Socket emit join:', userId);
+      }
+  
       navigation.navigate('HomeScreen');
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');

@@ -9,9 +9,10 @@ import { useNavigation } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { TabParamList } from "../navigators/AppNavigator";
 import Toast from "react-native-toast-message";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../navigators/AppNavigator";
 
-
-type NavigationProps = BottomTabNavigationProp<TabParamList, "AccountTab">;
+type NavigationProps = StackNavigationProp<RootStackParamList, "HomeScreen">;
 const getAuthToken = async () => {
   return await AsyncStorage.getItem("userToken");
 };
@@ -109,10 +110,8 @@ const OrderScreen: React.FC = () => {
 
         setOriginalTotalPrice(total);
       } else {
-        console.error("Lỗi khi lấy giỏ hàng:", data.error);
       }
     } catch (error) {
-      console.error("Lỗi khi lấy giỏ hàng:", error);
     }
   };
 
@@ -250,7 +249,7 @@ const OrderScreen: React.FC = () => {
         couponCode: promoCode || null,
         paymentMethod: selectedPayment.toLowerCase() === "cod" ? "cod" : "zaloPay",
         note: note || "",
-        redeemPoints: parsedRedeemPoints,  // Đảm bảo giá trị `redeemPoints` được gửi đi
+        redeemPoints: parsedRedeemPoints, 
         cartItems: cart.map((item) => ({
           productId: item.productId._id,
           quantity: item.quantity,
@@ -284,7 +283,9 @@ const OrderScreen: React.FC = () => {
           text2: `Mã đơn hàng: ${data.order._id}`,
         });
         setCart([]);
-        navigation.navigate("AccountTab");
+        navigation.navigate("HomeScreen", // trả về home sau khi thanh toán
+        );
+        
       } else {
         Toast.show({
           type: "error",
@@ -477,22 +478,22 @@ const OrderScreen: React.FC = () => {
               {/* Nút giảm số điểm */}
               <TouchableOpacity
                 style={[styles.adjustButton, styles.decreaseButton]}
-                onPress={handleDecrease} // Sử dụng handleDecrease để giảm điểm
+                onPress={handleDecrease}
               >
                 <Text style={styles.buttonText}>-</Text>
               </TouchableOpacity>
   
               {/* Hiển thị số điểm quy đổi */}
               <TextInput
-                style={[styles.input, { textAlign: 'center' }]} // Căn giữa số điểm
-                value={redeemPoints.toString()} // Hiển thị redeemPoints
-                editable={false} // Không cho phép người dùng chỉnh sửa trực tiếp
+                style={[styles.input, { textAlign: 'center' }]}
+                value={redeemPoints.toString()} 
+                editable={false}
               />
   
               {/* Nút tăng số điểm */}
               <TouchableOpacity
                 style={[styles.adjustButton, styles.increaseButton]}
-                onPress={handleIncrease} // Sử dụng handleIncrease để tăng điểm
+                onPress={handleIncrease}
               >
                 <Text style={styles.buttonText}>+</Text>
               </TouchableOpacity>

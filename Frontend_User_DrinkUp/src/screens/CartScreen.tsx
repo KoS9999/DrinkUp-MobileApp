@@ -235,7 +235,14 @@ const CartScreen: React.FC = () => {
               <Text style={styles.totalText}>{cart?.items.length} sản phẩm</Text>
               <Text style={styles.totalAmount}>{calculateTotalAmount().toLocaleString("vi-VN")}đ</Text>
             </View>
-            <TouchableOpacity style={styles.continueButton} onPress={() => navigation.navigate("OrderScreen")}>
+            <TouchableOpacity
+              style={[
+                styles.continueButton,
+                { backgroundColor: cart?.items.length ? "#7EA172" : "#ccc" }
+              ]}
+              onPress={() => navigation.navigate("OrderScreen")}
+              disabled={!cart?.items.length}// khi giỏ hàng trống không cho ấn tiếp tục
+            >
               <Text style={styles.continueText}>Tiếp tục</Text>
             </TouchableOpacity>
           </>

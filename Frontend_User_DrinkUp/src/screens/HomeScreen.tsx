@@ -75,7 +75,6 @@ const HomeScreen = () => {
         }
 
         const jsonResponse = await response.json();
-        console.log("Fetched top selling products:", JSON.stringify(jsonResponse, null, 2));
 
         if (jsonResponse.success && jsonResponse.data) {
           // Định nghĩa kiểu dữ liệu cho item
