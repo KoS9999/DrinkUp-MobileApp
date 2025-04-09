@@ -25,6 +25,7 @@ import SearchScreen from "../screens/SearchScreen";
 import ProductDetailScreen from "../screens/ProductDetailScreen";
 import OrderDetailScreen from "../screens/OrderDetailScreen";
 import OrderHistoryScreen from "../screens/OrderHistoryScreen";
+import OrderHistoryTabs from "../screens/OrderHistoryScreen";
 import FooterNavigation from "../components/FooterNavigation";
 import { Product } from "../models/Product";
 import ViewedProductsScreen from "../screens/ViewedProductsScreen";
@@ -92,7 +93,7 @@ const HomeTabs = () => {
       <Tab.Screen name="HomeTab" component={HomeScreen} />
       <Tab.Screen name="OrderTab" component={SearchScreen} />
       <Tab.Screen name="CartTab" component={CartScreen} />
-      <Tab.Screen name="StoreTab" component={OrderScreen} />
+      <Tab.Screen name="StoreTab" component={StoreScreen} />
       <Tab.Screen name="AccountTab" component={AccountStack} />
     </Tab.Navigator>
   );
@@ -103,7 +104,7 @@ const AccountStack = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AccountScreen" component={AccountScreen} />
       <Stack.Screen name="UpdateProfileScreen" component={UpdateProfileStack} />
-      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
+      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryTabs} />
       <Stack.Screen name="OrderDetailScreen" component={OrderDetailScreen} />
       <Stack.Screen name="FavouriteListScreen" component={FavouriteListScreen}/>
       <Stack.Screen name="ViewedProductsScreen" component={ViewedProductsScreen}/>
