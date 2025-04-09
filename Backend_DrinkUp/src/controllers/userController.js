@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const User = require('../models/User');
 const OTP = require('../models/OTP');
 const Order = require('../models/Order');
@@ -141,11 +142,15 @@ exports.updateProfileImage = async (req, res) => {
   }
 };
 
-exports.getOrderHistory = async (req, res) => {
+exports.getOrderHistoryWithSummary = async (req, res) => {
   try {
     const userId = req.user.id;
+    const { status } = req.query;
 
-    const orders = await Order.find({ user: userId })
+    const query = { user: userId };
+    if (status) query.orderStatus = status;
+
+    const orders = await Order.find(query)
       .populate({
         path: 'user',
         select: 'name email phone'
@@ -155,12 +160,41 @@ exports.getOrderHistory = async (req, res) => {
         select: 'name address'
       });
 
+    const summary = await Order.aggregate([
+      { $match: { user: new mongoose.Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: "$orderStatus",
+          totalAmount: { $sum: "$finalPrice" },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const summaryResult = summary.reduce((acc, item) => {
+      acc[item._id] = {
+        totalAmount: item.totalAmount,
+        count: item.count
+      };
+      return acc;
+    }, {});
+
     if (!orders.length) {
-      return res.status(404).json({ message: 'Bạn chưa có đơn hàng nào' });
+      return res.status(404).json({
+        message: 'Bạn chưa có đơn hàng nào phù hợp',
+        orders: [],
+        summary: summaryResult
+      });
     }
 
-    res.status(200).json({ message: 'Lịch sử mua hàng', orders });
+    res.status(200).json({
+      message: 'Lịch sử mua hàng',
+      orders,
+      summary: summaryResult
+    });
+
   } catch (error) {
+    console.error("Lỗi khi lấy lịch sử và tổng hợp đơn hàng:", error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
