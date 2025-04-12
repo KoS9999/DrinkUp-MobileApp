@@ -4,6 +4,7 @@ const Review = require('../models/Review');
 const OrderDetail = require('../models/OrderDetail');
 const Product = require('../models/Product');
 const Topping = require('../models/Topping');
+const Order = require('../models/Order');
 
 // Find product by ID
 const findProductById = async (req, res) => {
@@ -98,9 +99,53 @@ const getSimilarProducts = async (req, res) => {
       }
 }
 
+const getPurchaseStats = async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    // 1. Lấy tất cả OrderDetail chứa sản phẩm
+    const orderDetails = await OrderDetail.find({ product: productId }).lean();
+    if (orderDetails.length === 0) {
+      return res.json({
+        totalPurchases: 0,
+        uniqueBuyers: 0
+      });
+    }
+
+    // 2. Lấy danh sách orderIds
+    const orderIds = orderDetails.map(item => item.orderId);
+
+    // 3. Lấy thông tin các Order đã thanh toán
+    const paidOrders = await Order.find({
+      _id: { $in: orderIds },
+      paymentStatus: 'paid'
+    }).select('user').lean();
+
+    const paidOrderIds = paidOrders.map(o => o._id.toString());
+    const userIds = new Set(paidOrders.map(o => o.user.toString()));
+
+    // 4. Tính tổng số lượt mua từ các OrderDetail liên quan
+    const totalPurchases = orderDetails.reduce((sum, item) => {
+      return paidOrderIds.includes(item.orderId.toString())
+        ? sum + item.quantity
+        : sum;
+    }, 0);
+
+    res.json({
+      totalPurchases,             // Tổng số lượt mua (quantity)
+      uniqueBuyers: userIds.size  // Số người dùng duy nhất đã mua
+    });
+
+  } catch (err) {
+    console.error('Lỗi khi lấy thống kê mua hàng:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ' });
+  }
+};
+
 module.exports = {
     findProductById,
     countCustomersByProductId,
     getReviewsByProductId,
-    getSimilarProducts
+    getSimilarProducts,
+    getPurchaseStats
 };
