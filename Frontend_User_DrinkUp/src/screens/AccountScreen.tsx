@@ -18,17 +18,38 @@ type TabItem = {
 
 const AccountScreen = () => {
   const [userName, setUserName] = useState('');
+  const [userPoints, setUserPoints] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   useEffect(() => {
-    const fetchUserName = async () => {
-      const storedUserName = await AsyncStorage.getItem('userName');
-      if (storedUserName) {
-        setUserName(storedUserName);
+    const fetchUserProfile = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (!token) return;
+  
+        const response = await fetch(`${API_BASE_URL}/user/profile`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        const data = await response.json();
+  
+        if (response.ok && data.user) {
+          setUserPoints(data.user.points);
+          setUserName(data.user.name);
+        } else {
+          console.error('Lỗi lấy user:', data.message);
+        }
+      } catch (error) {
+        console.error('Lỗi kết nối API:', error);
       }
     };
-    fetchUserName();
-  }, []);
+  
+    fetchUserProfile();
+  }, []);  
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -59,7 +80,7 @@ const AccountScreen = () => {
           resizeMode="cover"
         >
           <Text style={styles.memberTitle}>THẺ THÀNH VIÊN</Text>
-          <Text style={styles.katBalance}>8 POINTS</Text>
+          <Text style={styles.katBalance}>{userPoints} POINTS</Text>
           <Text style={styles.memberName}>{userName}</Text>
           <Barcode value="1234567890987" options={{ format: 'CODE128', background: 'white', height: 70, width: 2 }} />
         </ImageBackground>

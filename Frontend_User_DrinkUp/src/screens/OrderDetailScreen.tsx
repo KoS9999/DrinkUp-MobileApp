@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Button, TextInput } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Image, Button, TextInput, TouchableOpacity } from "react-native";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { RootStackParamList } from "../navigators/AppNavigator";
+import { Modal } from "react-native";
+import StarRating from "../components/StarRating";
 
 type Topping = {
   _id: string;
@@ -44,7 +46,7 @@ const OrderDetailScreen: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [ratings, setRatings] = useState<{ [key: string]: number }>({}); 
   const [reviewTexts, setReviewTexts] = useState<{ [key: string]: string }>({}); 
-
+  
 
 
   useEffect(() => {
@@ -116,8 +118,8 @@ const OrderDetailScreen: React.FC = () => {
     }
   
     const reviewData = {
-      rating: ratings[orderDetailId] || 1, // Lấy rating cho sản phẩm này
-      reviewText: reviewTexts[orderDetailId] || "", // Lấy reviewText cho sản phẩm này
+      rating: ratings[orderDetailId] || 1, 
+      reviewText: reviewTexts[orderDetailId] || "", 
     };
   
     const existingReview = reviews[orderDetailId];
@@ -159,7 +161,7 @@ const OrderDetailScreen: React.FC = () => {
   
       if (response.ok) {
         console.log("Đánh giá đã được xử lý thành công:", data);
-        fetchReviews(orderDetails); // Tải lại các đánh giá
+        fetchReviews(orderDetails); 
         setIsReviewing(false);
       } else {
         console.error("Lỗi khi gửi đánh giá:", data?.error || "Lỗi không xác định");
@@ -175,6 +177,8 @@ const OrderDetailScreen: React.FC = () => {
       ) : (
         <>
           <Text style={styles.title}>Chi Tiết Đơn Hàng</Text>
+  
+          {/* Thông tin đơn hàng */}
           {order && (
             <View style={styles.orderInfoCard}>
               <Text style={styles.orderText}>🆔 Mã đơn: <Text style={styles.highlightText}>{order._id}</Text></Text>
@@ -187,35 +191,7 @@ const OrderDetailScreen: React.FC = () => {
             </View>
           )}
   
-          {/* Review Form */}
-          {isReviewing && selectedProductId && (
-            <View style={styles.reviewForm}>
-              <Text>🌟 Chọn đánh giá (1-5):</Text>
-              <TextInput
-                style={styles.ratingInput}
-                value={String(ratings[selectedProductId] || 1)} // Sử dụng rating cho sản phẩm được chọn
-                onChangeText={(text) => setRatings((prevRatings) => ({
-                  ...prevRatings,
-                  [selectedProductId]: Number(text), // Cập nhật rating cho sản phẩm hiện tại
-                }))}
-                keyboardType="numeric"
-              />
-              <Text>📝 Nhập đánh giá:</Text>
-              <TextInput
-                style={styles.reviewInput}
-                value={reviewTexts[selectedProductId] || ""} // Sử dụng reviewText cho sản phẩm được chọn
-                onChangeText={(text) => setReviewTexts((prevReviewTexts) => ({
-                  ...prevReviewTexts,
-                  [selectedProductId]: text, // Cập nhật reviewText cho sản phẩm hiện tại
-                }))}
-                multiline
-                placeholder="Nhập đánh giá của bạn..."
-              />
-              <Button title="Gửi đánh giá" onPress={() => handleCreateOrUpdateReview(selectedProductId)} />
-              <Button title="Hủy" onPress={() => setIsReviewing(false)} />
-            </View>
-          )}
-  
+          {/* Danh sách sản phẩm */}
           <Text style={styles.sectionTitle}>🛒 Sản phẩm đã đặt</Text>
           <FlatList
             data={orderDetails}
@@ -246,20 +222,64 @@ const OrderDetailScreen: React.FC = () => {
   
                     <Text style={styles.productPrice}>💲 Giá tổng: {totalItemPrice.toLocaleString()}đ</Text>
   
-                    <Button
-                      title={reviews[item._id] ? "Sửa đánh giá" : "Tạo đánh giá"}
+                    <TouchableOpacity
+                      style={styles.reviewButton}
                       onPress={() => {
                         setIsReviewing(true);
-                        setSelectedProductId(item._id); // Lưu lại ID sản phẩm để đánh giá
+                        setSelectedProductId(item._id);
                         setRatings({ ...ratings, [item._id]: reviews[item._id]?.rating || 1 });
                         setReviewTexts({ ...reviewTexts, [item._id]: reviews[item._id]?.reviewText || "" });
                       }}
-                    />
+                    >
+                      <Text style={styles.reviewButtonText}>
+                        {reviews[item._id] ? "Sửa đánh giá" : "Tạo đánh giá"}
+                      </Text>
+                    </TouchableOpacity>
+
                   </View>
                 </View>
               );
             }}
           />
+  
+          {/* Modal đánh giá */}
+          <Modal visible={isReviewing} transparent animationType="slide">
+            <View style={styles.modalOverlay}>
+              <View style={styles.reviewFormCard}>
+                <Text style={styles.reviewTitle}>Đánh giá sản phẩm</Text>
+  
+                <StarRating
+                  rating={ratings[selectedProductId || ""] || 1}
+                  onChange={(value) =>
+                    setRatings((prev) => ({ ...prev, [selectedProductId || ""]: value }))
+                  }
+                />
+                <TextInput
+                  style={styles.reviewInput}
+                  multiline
+                  placeholder="Viết cảm nhận của bạn..."
+                  value={reviewTexts[selectedProductId || ""] || ""}
+                  onChangeText={(text) =>
+                    setReviewTexts((prev) => ({ ...prev, [selectedProductId || ""]: text }))
+                  }
+                />
+                <View style={styles.reviewButtonRow}>
+                  <TouchableOpacity
+                    style={[styles.reviewButton, { backgroundColor: "#999" }]}
+                    onPress={() => setIsReviewing(false)}
+                  >
+                    <Text style={styles.reviewButtonText}>Hủy</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.reviewButton, { backgroundColor: "#D2691E" }]}
+                    onPress={() => handleCreateOrUpdateReview(selectedProductId!)}
+                  >
+                    <Text style={styles.reviewButtonText}>Gửi đánh giá</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </>
       )}
     </View>
@@ -268,59 +288,30 @@ const OrderDetailScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 55, backgroundColor: "#F8F8F8" },
-  title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 15, color: "#6F4E37" },
-
-  orderInfoCard: {
-    backgroundColor: "#FFF",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    shadowColor: "#6F4E37",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  orderText: { fontSize: 16, marginBottom: 5, color: "#333" },
-  highlightText: { fontWeight: "bold", color: "#D2691E" },
-  couponText: { fontSize: 16, color: "#D2691E", fontWeight: "bold", marginTop: 5 },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#6F4E37",
-    marginBottom: 10,
-  },
-
-  productCard: {
-    flexDirection: "row",
-    backgroundColor: "#FFF",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    alignItems: "center",
-    shadowColor: "#6F4E37",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  productImage: {
-    width: 80, 
-    height: 80,
-    borderRadius: 10,
-    marginRight: 15,
-  },
-  productInfo: { flex: 1 },
-  productName: { fontSize: 16, fontWeight: "bold", color: "#6F4E37" },
-  productDetails: { fontSize: 14, color: "#555", marginTop: 5 },
-  toppingContainer: { marginTop: 5, paddingLeft: 5, borderLeftWidth: 2, borderColor: "#FFA500" },
-  toppingTitle: { fontSize: 14, fontWeight: "bold", color: "#D2691E" },
-  toppingText: { fontSize: 14, color: "#555" },
-  productPrice: { fontSize: 16, fontWeight: "bold", color: "#D2691E", marginTop: 5 },
-  reviewForm: { padding: 20, backgroundColor: "#fff", marginTop: 10 },
-  ratingInput: { height: 40, borderColor: "#ccc", borderWidth: 1, marginBottom: 10, padding: 8 },
-  reviewInput: { height: 80, borderColor: "#ccc", borderWidth: 1, marginBottom: 10, padding: 8 },
+title: { fontSize: 22, fontWeight: "bold", textAlign: "center", marginBottom: 15, color: "#6F4E37" },
+orderInfoCard: { backgroundColor: "#FFF", padding: 15, borderRadius: 10, marginBottom: 15, shadowColor: "#6F4E37", shadowOpacity: 0.2, shadowOffset: { width: 0, height: 2 }, shadowRadius: 4, elevation: 3 },
+orderText: { fontSize: 16, marginBottom: 5, color: "#333" },
+highlightText: { fontWeight: "bold", color: "#D2691E" },
+couponText: { fontSize: 16, color: "#D2691E", fontWeight: "bold", marginTop: 5 },
+sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#6F4E37", marginBottom: 10 },
+productCard: { flexDirection: "row", backgroundColor: "#FFF", padding: 15, borderRadius: 10, marginBottom: 10, alignItems: "center", shadowColor: "#6F4E37", shadowOpacity: 0.1, shadowOffset: { width: 0, height: 1 }, shadowRadius: 3, elevation: 2 },
+productImage: { width: 80, height: 80, borderRadius: 10, marginRight: 15 },
+modalOverlay: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)", justifyContent: "center", alignItems: "center", padding: 20 },
+reviewFormCard: { backgroundColor: "#FFF8F0", padding: 16, borderRadius: 12, width: "100%", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 4 },
+reviewTitle: { fontSize: 16, fontWeight: "bold", color: "#6F4E37", marginBottom: 12, textAlign: "center" },
+reviewInput: { height: 100, borderColor: "#ccc", borderWidth: 1, borderRadius: 8, padding: 10, textAlignVertical: "top", marginTop: 10 },
+reviewButtonRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
+reviewButton: { backgroundColor: "#FFA500", paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, alignSelf: "flex-start", marginTop: 10 },
+reviewButtonText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+productInfo: { flex: 1 },
+productName: { fontSize: 16, fontWeight: "bold", color: "#6F4E37" },
+productDetails: { fontSize: 14, color: "#555", marginTop: 5 },
+toppingContainer: { marginTop: 5, paddingLeft: 5, borderLeftWidth: 2, borderColor: "#FFA500" },
+toppingTitle: { fontSize: 14, fontWeight: "bold", color: "#D2691E" },
+toppingText: { fontSize: 14, color: "#555" },
+productPrice: { fontSize: 16, fontWeight: "bold", color: "#D2691E", marginTop: 5 },
+reviewForm: { padding: 20, backgroundColor: "#fff", marginTop: 10 },
+ratingInput: { height: 40, borderColor: "#ccc", borderWidth: 1, marginBottom: 10, padding: 8 }
 });
 
 export default OrderDetailScreen;
