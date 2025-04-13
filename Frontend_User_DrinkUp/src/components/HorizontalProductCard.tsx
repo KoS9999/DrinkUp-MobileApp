@@ -4,31 +4,54 @@ import { MaterialIcons, AntDesign } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE_URL } from "../config/api";
 
 type Product = {
     _id: string;
-  name: string;
-  description?: string;
-  price: {
-    S: number;
-    M: number;
-    L: number;
-  };
-  category: string;
-  imageUrl?: string;
-  toppings: { _id: string; name: string; price: number }[];
-  createdAt: string;
+    name: string;
+    description?: string;
+    price: {
+        S: number;
+        M: number;
+        L: number;
+    };
+    category: string;
+    imageUrl?: string;
+    toppings: { _id: string; name: string; price: number }[];
+    createdAt: string;
 }
 
 interface ProductCardProps {
     product: Product;
 }
 
+interface ProductStats {
+    totalPurchases: number;
+    uniqueBuyers: number;
+}
+
 const HorizontalProductCard: React.FC<ProductCardProps> = ({ product }) => {
-    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const navigation = useNavigation<StackNavigationProp<any>>();
     const [isExpanded, setIsExpanded] = useState(false);
     const maxLength = 50;
-    
+    const [stats, setStats] = useState<ProductStats | null>(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/product/purchase-stats/${product._id}`);
+                const data = await response.json();
+                setStats(data);
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        };
+
+        if (product._id) {
+            fetchStats();
+        }
+    }, [product._id]);
+
     return (
         <TouchableOpacity
             style={styles.productContainer}
@@ -41,6 +64,7 @@ const HorizontalProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     <View style={styles.mockImage} />
                 )}
             </View>
+
             <View style={styles.productInfo}>
                 <Text style={styles.productName}>{product.name}</Text>
 
@@ -56,6 +80,13 @@ const HorizontalProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     <Text style={styles.productPrice}>Size L: {product.price.L} đ</Text>
                 </View>
 
+                {stats && (
+                    <View style={{ marginTop: 8, flexDirection: 'row' }}>
+                        <Text>Lượt bán: {stats.totalPurchases}</Text>
+                        <Text style={{ marginLeft: 20 }}>Số người mua: {stats.uniqueBuyers}</Text>
+                    </View>
+                )}
+
                 <TouchableOpacity style={styles.buyButton}>
                     <Text style={styles.buyButtonText}>Đặt mua</Text>
                 </TouchableOpacity>
@@ -68,7 +99,7 @@ const HorizontalProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </TouchableOpacity>
         </TouchableOpacity>
     );
-}
+};
 
 export default HorizontalProductCard
 
@@ -145,6 +176,7 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 10,
         alignSelf: 'flex-start',
+        marginTop: 10
     },
     buyButtonText: {
         color: 'white',
@@ -157,5 +189,9 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#DC5D5D',
     },
-
+    productStats: {
+        fontSize: 14,
+        color: '#444',
+        marginTop: 0,
+    },
 });
