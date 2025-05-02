@@ -79,7 +79,7 @@ const LoginScreen = () => {
         <Entypo name="email" size={24} color="#888" style={styles.icon} />
         <TextInput
           style={styles.input}
-          placeholder="Email hoặc SĐT"
+          placeholder="Email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
