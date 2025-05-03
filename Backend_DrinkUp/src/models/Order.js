@@ -17,7 +17,7 @@ const OrderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['cod', 'online'],
+    enum: ['cod', 'zaloPay'],
     required: true
   },
   orderType: {
@@ -31,7 +31,8 @@ const OrderSchema = new mongoose.Schema({
   deliveryAddress: { type: String },
   estimatedDeliveryTime: { type: Date },
   note: { type: String },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 OrderSchema.pre('save', function (next) {
