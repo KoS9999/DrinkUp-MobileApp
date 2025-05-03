@@ -101,10 +101,17 @@ const HomeTabs = () => {
 
 const AccountStack = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal'
+      }}
+      initialRouteName="AccountScreen"
+    >
       <Stack.Screen name="AccountScreen" component={AccountScreen} />
       <Stack.Screen name="UpdateProfileScreen" component={UpdateProfileStack} />
-      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryTabs} />
+      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetailScreen" component={OrderDetailScreen} />
       <Stack.Screen name="FavouriteListScreen" component={FavouriteListScreen}/>
       <Stack.Screen name="ViewedProductsScreen" component={ViewedProductsScreen}/>
