@@ -34,7 +34,6 @@ const findProductById = async (req, res) => {
     }
 };
 
-// Count customers who have bought the product
 const countCustomersByProductId = async (req, res) => {
     try {
         const { id } = req.params;
@@ -56,7 +55,6 @@ const countCustomersByProductId = async (req, res) => {
     }
 };
 
-// Get reviews by product ID
 const getReviewsByProductId = async (req, res) => {
     try {
         const { id } = req.params;
@@ -86,11 +84,10 @@ const getSimilarProducts = async (req, res) => {
     
         if (!product) return res.status(404).json({ message: 'Product not found' });
     
-        // Lấy sản phẩm cùng category, loại bỏ chính nó
         const similarProducts = await Product.find({
           _id: { $ne: product._id },
           category: product.category,
-        }).limit(6); // Giới hạn 6 sản phẩm
+        }).limit(6); 
     
         res.json(similarProducts);
       } catch (err) {
@@ -103,7 +100,6 @@ const getPurchaseStats = async (req, res) => {
   const { productId } = req.params;
 
   try {
-    // 1. Lấy tất cả OrderDetail chứa sản phẩm
     const orderDetails = await OrderDetail.find({ product: productId }).lean();
     if (orderDetails.length === 0) {
       return res.json({
@@ -112,10 +108,8 @@ const getPurchaseStats = async (req, res) => {
       });
     }
 
-    // 2. Lấy danh sách orderIds
     const orderIds = orderDetails.map(item => item.orderId);
 
-    // 3. Lấy thông tin các Order đã thanh toán
     const paidOrders = await Order.find({
       _id: { $in: orderIds },
       paymentStatus: 'paid'
@@ -124,7 +118,6 @@ const getPurchaseStats = async (req, res) => {
     const paidOrderIds = paidOrders.map(o => o._id.toString());
     const userIds = new Set(paidOrders.map(o => o.user.toString()));
 
-    // 4. Tính tổng số lượt mua từ các OrderDetail liên quan
     const totalPurchases = orderDetails.reduce((sum, item) => {
       return paidOrderIds.includes(item.orderId.toString())
         ? sum + item.quantity
@@ -132,8 +125,8 @@ const getPurchaseStats = async (req, res) => {
     }, 0);
 
     res.json({
-      totalPurchases,             // Tổng số lượt mua (quantity)
-      uniqueBuyers: userIds.size  // Số người dùng duy nhất đã mua
+      totalPurchases,             
+      uniqueBuyers: userIds.size  
     });
 
   } catch (err) {
