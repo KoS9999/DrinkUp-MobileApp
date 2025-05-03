@@ -105,3 +105,24 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
+exports.verifyToken = async (req, res) => {
+  const authHeader = req.header('Authorization');
+  const token = authHeader?.replace('Bearer ', '');
+
+  if (!token) {
+    return res.status(401).json({ message: 'Token không được cung cấp' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    return res.status(200).json({ message: 'Token hợp lệ', user });
+  } catch (error) {
+    return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn', error: error.message });
+  }
+};
