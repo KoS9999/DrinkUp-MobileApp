@@ -13,6 +13,9 @@ const productRoutes = require('./src/routes/productRoutes');
 const cartRoutes = require('./src/routes/cartRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
 const favoriteRoutes = require('./src/routes/favoriteRoutes');
+const adminProductRoutes = require('./src/routes/adminProductRoutes');
+const adminOrderRoutes = require('./src/routes/adminOrderRoutes');
+const adminUserRoutes = require('./src/routes/adminUserRoutes');
 
 connectDB();
 const app = express();
@@ -56,6 +59,9 @@ app.use('/api/product', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/favorite', favoriteRoutes);
+app.use('/api/admin/products', adminProductRoutes);
+app.use('/api/admin/orders', adminOrderRoutes);
+app.use('/api/admin/users', adminUserRoutes);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
