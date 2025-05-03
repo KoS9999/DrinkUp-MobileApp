@@ -90,6 +90,7 @@ const CartScreen: React.FC = () => {
   const navigation = useNavigation<CartScreenNavigationProp>();
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const fetchCart = async () => {
     try {
@@ -125,8 +126,19 @@ const CartScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCart();
-  }, []);
+    const checkLoginStatus = async () => {
+      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
+      const token = await getAuthToken();
+      if (loggedIn !== 'true' || !token) {
+        navigation.navigate('Login');
+      } else {
+        setIsLoggedIn(true);
+        fetchCart(); 
+      }
+    };
+  
+    checkLoginStatus();
+  }, [navigation]);
 
   const calculateTotalAmount = () => {
     if (!cart?.items || cart.items.length === 0) return 0;
