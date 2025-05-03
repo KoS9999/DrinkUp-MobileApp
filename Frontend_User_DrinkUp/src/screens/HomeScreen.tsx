@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Animated } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Animated, BackHandler  } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -39,6 +39,13 @@ const HomeScreen = () => {
     };
     fetchUserName();
   }, [])
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => true
+    );
+    return () => backHandler.remove();
+  }, []);
 
   useEffect(() => {
     const updateGreeting = () => {
@@ -123,10 +130,9 @@ const HomeScreen = () => {
   });
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('isLoggedIn');
-    await AsyncStorage.removeItem('userToken');
-    setIsLoggedIn(false);
-  }
+    await AsyncStorage.multiRemove(['isLoggedIn', 'userToken', 'user']);
+    navigation.replace('OnBoardingScreen');
+  };
 
   const slides = [
     {

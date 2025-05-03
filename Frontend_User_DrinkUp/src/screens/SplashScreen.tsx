@@ -3,12 +3,15 @@ import { View, Image, ImageBackground, ActivityIndicator, StyleSheet, Text } fro
 import { appInfo } from '../constants/appInfos';
 import { appColors } from '../constants/appColors';
 import { SpaceComponent } from '../components';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import { useFonts } from 'expo-font';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from "../config/api";
 
 const SplashScreen = () => {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [fontsLoaded] = useFonts({
     "Pacifico-Regular": require("../../assets/fonts/Pacifico-Regular.ttf"),
   });
@@ -16,13 +19,53 @@ const SplashScreen = () => {
 
   useEffect(() => {
     if (fontsLoaded) {
-      const timer = setTimeout(() => {
-        navigation.navigate('OnBoardingScreen');
-      }, 2000);
+      // SplashScreen.tsx
+      const checkAuthStatus = async () => {
+        try {
+          const token = await AsyncStorage.getItem('userToken');
+          const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
 
-      return () => clearTimeout(timer);
+          // Debug thêm thông tin
+          console.log('Token exists:', !!token);
+          console.log('isLoggedIn:', isLoggedIn);
+
+          if (!token || isLoggedIn !== 'true') {
+            navigation.replace('OnBoardingScreen');
+            return;
+          }
+
+          const response = await fetch(`${API_BASE_URL}/auth/verify-token`, { 
+            method: 'GET',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` // Gửi token qua header
+            },
+          });
+
+          // Debug response
+          console.log('Verify token status:', response.status);
+          const responseBody = await response.text();
+          console.log('Response body:', responseBody);
+
+          if (response.ok) {
+            navigation.replace('HomeScreen');
+          } else {
+            await AsyncStorage.multiRemove(['userToken', 'isLoggedIn', 'user']);
+            navigation.replace('OnBoardingScreen');
+          }
+        } catch (error) {
+          console.error('Auth check error:', error);
+          navigation.replace('OnBoardingScreen');
+        }
+      };
+  
+      const splashTimeout = setTimeout(() => {
+        checkAuthStatus();
+      }, 2000);
+      
+      return () => clearTimeout(splashTimeout);
     }
-  }, [navigation, fontsLoaded]);
+  }, [fontsLoaded, navigation]);
 
   if (!fontsLoaded) {
     return null; // Hoặc hiển thị ActivityIndicator trong khi tải font

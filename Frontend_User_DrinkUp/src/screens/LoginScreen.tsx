@@ -63,7 +63,7 @@ const LoginScreen = () => {
         console.log('📲 Socket emit join:', userId);
       }
   
-      navigation.navigate('HomeScreen');
+      navigation.replace('HomeScreen');
     } catch (error) {
       setError('Có lỗi xảy ra. Vui lòng thử lại.');
       console.error('Login error:', error);
