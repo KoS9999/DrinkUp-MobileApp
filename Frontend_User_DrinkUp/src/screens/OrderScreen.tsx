@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, 
-   KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform, ScrollView, RefreshControl  } from "react-native";
+   KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard, Platform, ScrollView, RefreshControl, BackHandler  } from "react-native";
 import { RadioButton } from "react-native-paper";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -73,6 +73,20 @@ const OrderScreen: React.FC = () => {
   useEffect(() => {
   setTotalPrice(originalTotalPrice - discountPrice - pointsDiscount);
 }, [originalTotalPrice, discountPrice, pointsDiscount]);
+
+  useEffect(() => {
+    const backAction = () => {
+      navigation.goBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
 
   const fetchCart = async () => {
     try {

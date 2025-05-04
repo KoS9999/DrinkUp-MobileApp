@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
+  Alert, BackHandler
 } from "react-native";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -91,6 +91,19 @@ const OrderTabScreen = ({ status }: { status: string }) => {
   
   useEffect(() => {
     fetchData();
+  }, []);
+  useEffect(() => {
+    const backAction = () => {
+      navigation.goBack();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
   }, []);
 
   const handleCancelOrder = async (orderId: string) => {
