@@ -30,6 +30,7 @@
     "react-native-get-random-values": "~1.11.0",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-modal": "^14.0.0-rc.1",
+    "react-native-pager-view": "^6.7.1",
     "react-native-paper": "^5.13.1",
     "react-native-paper-dates": "^0.22.36",
     "react-native-reanimated": "~3.16.1",
@@ -40,6 +41,7 @@
     "react-native-toast": "^1.0.1",
     "react-native-toast-message": "^2.2.1",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-webview": "^13.13.5",
     "socket.io-client": "^4.8.1",
     "undefined": "react-native-community/datetimepicker"
   },
