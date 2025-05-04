@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet,
+  View, TextInput, Text, TouchableOpacity, FlatList, StyleSheet, BackHandler,
   Alert, Image, ActivityIndicator, Dimensions, ScrollView, Animated
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -46,6 +46,20 @@ const SearchScreen = () => {
   useEffect(() => {
     fetchProducts();
   }, [sortBy, orderBy, selectedCategory]);
+  
+    useEffect(() => {
+      const backAction = () => {
+        navigation.goBack();
+        return true;
+      };
+  
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backAction
+      );
+  
+      return () => backHandler.remove();
+    }, []);
 
   const fetchCategories = async () => {
     try {
@@ -135,10 +149,6 @@ const SearchScreen = () => {
     <View style={styles.container}>
       {/* Thanh tìm kiếm */}
       <View style={styles.searchBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-
         <View style={styles.searchInputContainer}>
           <TextInput
             style={styles.searchInput}
@@ -162,7 +172,7 @@ const SearchScreen = () => {
           )}
         </View>
 
-        <TouchableOpacity onPress={() => fetchProducts()}>
+        <TouchableOpacity style={{ marginLeft: 8 }} onPress={() => fetchProducts()}>
           <MaterialIcons name="search" size={24} color="black" />
         </TouchableOpacity>
       </View>
@@ -170,10 +180,6 @@ const SearchScreen = () => {
       <View style={styles.contentContainer}>
         {/* Danh mục bên trái với khả năng thu gọn */}
         <Animated.View style={[styles.categoryContainer, { width: categoryWidth }]}>
-          <TouchableOpacity onPress={handleToggleCategory} style={styles.toggleButton}>
-            <MaterialIcons name={isCollapsed ? "keyboard-arrow-down" : "keyboard-arrow-up"} size={24} color="black" />
-          </TouchableOpacity>
-
           {!isCollapsed && (
             <ScrollView>
               {categories.map((category) => (
@@ -242,14 +248,14 @@ const SearchScreen = () => {
   );
 };
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 40 },
-  searchBar: { flexDirection: "row", alignItems: "center", marginBottom: 10, },
+  container: { flex: 1, paddingTop: 40, paddingBottom: 40 },
+  searchBar: { flexDirection: "row", alignItems: "center", marginBottom: 10, marginHorizontal: 20,},
   searchInputContainer: { flex: 1, position: "relative", },
   searchInput: { height: 40, borderWidth: 1, borderColor: "#ccc", borderRadius: 15, paddingHorizontal: 20, backgroundColor: "#fff", },
   clearButton: { position: "absolute", right: 5, top: "35%", transform: [{ translateY: -10 }], padding: 5 },
 
   contentContainer: { flexDirection: "row", flex: 1 },
-  categoryContainer: { backgroundColor: "#f8f8f8", paddingVertical: 5, paddingHorizontal: 5, width: 300 },
+  categoryContainer: { paddingVertical: 5, paddingHorizontal: 5, width: 300 },
   categoryItem: { paddingVertical: 5, paddingHorizontal: 8, alignItems: "center", marginBottom: 10 },
   selectedCategory: { backgroundColor: "#ddd", borderRadius: 5 },
   categoryText: { fontSize: 14, fontWeight: "bold", textAlign: "center" },
@@ -312,7 +318,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -10,
     left: -10,
-    backgroundColor: '#b08d64',  // Màu giống trong hình
+    backgroundColor: '#b08d64',  
     borderRadius: 10,
     paddingVertical: 2,
     paddingHorizontal: 6,
