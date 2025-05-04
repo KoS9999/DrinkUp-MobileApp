@@ -29,6 +29,7 @@ import OrderHistoryTabs from "../screens/OrderHistoryScreen";
 import FooterNavigation from "../components/FooterNavigation";
 import { Product } from "../models/Product";
 import ViewedProductsScreen from "../screens/ViewedProductsScreen";
+import PaymentWebView from '../screens/PaymentWebView';
 
 export type RootStackParamList = {
   SplashScreen: undefined;
@@ -49,8 +50,12 @@ export type RootStackParamList = {
   OrderDetailScreen: { orderId: string };
   SearchScreen: undefined;
   ViewedProductsScreen: undefined;
-
-  // ProductDetailScreen: { productId: string };
+  PaymentWebView: {
+    paymentUrl: string;
+    apptransid: string;
+    amount: number;
+    expiresAt: string;
+  };
   ProductDetailScreen: {
     productId: string;
     cartItem?: {
@@ -193,6 +198,8 @@ export default function AppNavigator() {
           />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="PolicyScreen" component={PolicyScreen} />
+          <Stack.Screen name="PaymentWebView" component={PaymentWebView} options={{ title: 'Thanh toán' }} />
+
         </Stack.Navigator>
       </NavigationContainer>
     </CartProvider>
