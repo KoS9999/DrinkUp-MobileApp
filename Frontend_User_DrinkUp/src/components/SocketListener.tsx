@@ -41,8 +41,22 @@ const SocketListener = () => {
       });
     });
 
+    socket.on('paymentStatusUpdated', ({ orderId, newPaymentStatus, updateTime }) => {
+      const time = new Date(updateTime).toLocaleTimeString('vi-VN');
+      console.log('🔔 Nhận socket paymentStatusUpdated:', { orderId, newPaymentStatus, updateTime });
+
+      Toast.show({
+        type: 'info',
+        text1: `💰 Đơn hàng #${orderId}`,
+        text2: `Thanh toán: ${newPaymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'} lúc ${time}`,
+        visibilityTime: 5000,
+        autoHide: true,
+      });
+    });
+
     return () => {
       socket.off('orderStatusUpdated');
+      socket.off('paymentStatusUpdated'); 
       socket.off('connect');
     };
   }, []);
