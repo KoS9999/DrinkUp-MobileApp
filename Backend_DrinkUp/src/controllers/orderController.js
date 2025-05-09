@@ -22,77 +22,6 @@ exports.getBranches = async (req, res) => {
     res.status(500).json({ success: false, error: 'Lỗi khi lấy danh sách chi nhánh' });
   }
 };
-
-exports.calculateShipping = async (req, res) => {
-  try {
-    const { deliveryAddress, lat, lng } = req.body;
-
-    if (!deliveryAddress || !lat || !lng) {
-      return res.status(400).json({ success: false, error: 'Vui lòng cung cấp địa chỉ và tọa độ' });
-    }
-
-    const branches = await Branch.find({ status: 'open' });
-    if (!branches.length) {
-      return res.status(404).json({ success: false, error: 'Không tìm thấy chi nhánh nào đang mở' });
-    }
-
-    const origins = branches.map(branch => `${branch.coordinates.latitude},${branch.coordinates.longitude}`);
-    const destination = `${lat},${lng}`;
-
-    const distanceMatrixUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins.join('|')}&destinations=${destination}&key=${GOOGLE_MAPS_API_KEY}`;
-    console.log('Distance Matrix URL:', distanceMatrixUrl); 
-
-    const distanceResponse = await axios.get(distanceMatrixUrl);
-    console.log('Distance Matrix Response:', JSON.stringify(distanceResponse.data, null, 2)); 
-
-    if (distanceResponse.data.status !== 'OK' || !distanceResponse.data.rows) {
-      console.error('Distance Matrix Error:', distanceResponse.data);
-      return res.status(500).json({ success: false, error: `Lỗi khi tính toán khoảng cách: ${distanceResponse.data.status}` });
-    }
-
-    let nearestBranch = null;
-    let minDistance = Infinity;
-    let duration = null;
-
-    distanceResponse.data.rows.forEach((row, index) => {
-      const element = row.elements[0];
-      console.log(`Branch ${index} element:`, element); 
-      if (element.status === 'OK') {
-        const distanceInMeters = element.distance.value;
-        if (distanceInMeters < minDistance) {
-          minDistance = distanceInMeters;
-          nearestBranch = branches[index];
-          duration = element.duration;
-        }
-      } else {
-        console.warn(`Branch ${index} has invalid status: ${element.status}`);
-      }
-    });
-
-    if (!nearestBranch) {
-      console.error('No suitable branch found for destination:', destination);
-      return res.status(500).json({ success: false, error: 'Không tìm thấy chi nhánh phù hợp' });
-    }
-
-    const distanceInKm = minDistance / 1000;
-    const shippingFee = Math.ceil(distanceInKm / 5) * 10000;
-
-    const estimatedDeliveryTime = new Date(Date.now() + duration.value * 1000);
-
-    res.status(200).json({
-      success: true,
-      branch: nearestBranch,
-      distance: distanceInKm,
-      duration: duration.text,
-      shippingFee,
-      estimatedDeliveryTime,
-    });
-  } catch (error) {
-    console.error('Error calculating shipping:', error.message, error.stack); 
-    res.status(500).json({ success: false, error: 'Lỗi khi tính toán phí vận chuyển', details: error.message });
-  }
-};
-
 exports.applyCoupon = async (req, res) => {
   try {
     const { couponCode } = req.body;
@@ -136,7 +65,6 @@ exports.applyCoupon = async (req, res) => {
     res.status(500).json({ error: 'Lỗi khi áp dụng mã giảm giá' });
   }
 };
-
 exports.redeemPoints = async (req, res) => {
   try {
     const { points } = req.body;
@@ -168,7 +96,6 @@ exports.redeemPoints = async (req, res) => {
     res.status(500).json({ error: 'Đã xảy ra lỗi nội bộ. Vui lòng thử lại sau.' });
   }
 };
-
 exports.createOrder = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -316,6 +243,76 @@ exports.createOrder = async (req, res) => {
       error: 'Lỗi khi tạo đơn hàng. Vui lòng chọn phương thức thanh toán',
       details: error.message,
     });
+  }
+};
+
+exports.calculateShipping = async (req, res) => {
+  try {
+    const { deliveryAddress, lat, lng } = req.body;
+
+    if (!deliveryAddress || !lat || !lng) {
+      return res.status(400).json({ success: false, error: 'Vui lòng cung cấp địa chỉ và tọa độ' });
+    }
+
+    const branches = await Branch.find({ status: 'open' });
+    if (!branches.length) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy chi nhánh nào đang mở' });
+    }
+
+    const origins = branches.map(branch => `${branch.coordinates.latitude},${branch.coordinates.longitude}`);
+    const destination = `${lat},${lng}`;
+
+    const distanceMatrixUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origins.join('|')}&destinations=${destination}&key=${GOOGLE_MAPS_API_KEY}`;
+    console.log('Distance Matrix URL:', distanceMatrixUrl); 
+
+    const distanceResponse = await axios.get(distanceMatrixUrl);
+    console.log('Distance Matrix Response:', JSON.stringify(distanceResponse.data, null, 2)); 
+
+    if (distanceResponse.data.status !== 'OK' || !distanceResponse.data.rows) {
+      console.error('Distance Matrix Error:', distanceResponse.data);
+      return res.status(500).json({ success: false, error: `Lỗi khi tính toán khoảng cách: ${distanceResponse.data.status}` });
+    }
+
+    let nearestBranch = null;
+    let minDistance = Infinity;
+    let duration = null;
+
+    distanceResponse.data.rows.forEach((row, index) => {
+      const element = row.elements[0];
+      console.log(`Branch ${index} element:`, element); 
+      if (element.status === 'OK') {
+        const distanceInMeters = element.distance.value;
+        if (distanceInMeters < minDistance) {
+          minDistance = distanceInMeters;
+          nearestBranch = branches[index];
+          duration = element.duration;
+        }
+      } else {
+        console.warn(`Branch ${index} has invalid status: ${element.status}`);
+      }
+    });
+
+    if (!nearestBranch) {
+      console.error('No suitable branch found for destination:', destination);
+      return res.status(500).json({ success: false, error: 'Không tìm thấy chi nhánh phù hợp' });
+    }
+
+    const distanceInKm = minDistance / 1000;
+    const shippingFee = Math.ceil(distanceInKm / 5) * 10000;
+
+    const estimatedDeliveryTime = new Date(Date.now() + duration.value * 1000);
+
+    res.status(200).json({
+      success: true,
+      branch: nearestBranch,
+      distance: distanceInKm,
+      duration: duration.text,
+      shippingFee,
+      estimatedDeliveryTime,
+    });
+  } catch (error) {
+    console.error('Error calculating shipping:', error.message, error.stack); 
+    res.status(500).json({ success: false, error: 'Lỗi khi tính toán phí vận chuyển', details: error.message });
   }
 };
 
@@ -532,7 +529,6 @@ exports.createZaloPayOrder = async (req, res) => {
     return res.status(500).json({ error: 'Lỗi khi tạo đơn hàng ZaloPay', details: error.message });
   }
 };
-
 
 exports.zaloPayCallback = async (req, res) => {
   try {
