@@ -11,8 +11,9 @@ const OrderTemp = require('../models/OrderTemp');
 const moment = require('moment-timezone');
 
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyAtrDd6-7V4rQyHJiBiXg4Ntd-JqmQkGbo';
+require('dotenv').config();
 
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 exports.getBranches = async (req, res) => {
   try {
     const branches = await Branch.find({ status: 'open' });
@@ -321,7 +322,7 @@ const config = {
   key1: "PcY4iZIKFCIdgZvA6ueMcMHHUbRLYjPL",
   key2: "kLtgPl8HHhfvMuDHPwKfgfsY4Ydm9eIz",
   endpoint: "https://sb-openapi.zalopay.vn/v2/create",
-  callback_url: "https://bd15-171-252-153-252.ngrok-free.app/api/order/zalopay-callback",
+  callback_url: "https://78b5-171-250-162-6.ngrok-free.app/api/order/zalopay-callback",
 };
 
 exports.createZaloPayOrder = async (req, res) => {
