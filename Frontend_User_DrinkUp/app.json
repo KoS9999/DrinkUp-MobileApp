@@ -13,13 +13,22 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.drinkup.frontend",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location for delivery services"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.drinkup.frontend",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -29,11 +38,9 @@
         "expo-font",
         {
           "fonts": [
-            {
-              "Pacifico-Regular": "../assets/fonts/Pacifico-Regular.ttf",
-              "Oswald-Regular": "../assets/fonts/Oswald-Regular.ttf",
-              "Oswald-Medium": "../assets/fonts/Oswald-Medium.ttf"
-            }
+            "./assets/fonts/Pacifico-Regular.ttf",
+            "./assets/fonts/Oswald-Regular.ttf",
+            "./assets/fonts/Oswald-Medium.ttf"
           ]
         }
       ]
