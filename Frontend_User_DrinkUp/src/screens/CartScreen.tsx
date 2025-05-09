@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { useNavigation } from '@react-navigation/native';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Button, Modal } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, Modal } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 import { API_BASE_URL } from "../config/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useCart } from "../components/CartContext";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigators/AppNavigator';
 import Toast from "react-native-toast-message";
 import { FlatList } from "react-native";
-
 
 type Product = {
   _id: string;
@@ -48,53 +46,29 @@ const getAuthToken = async () => {
   if (!token) {
     console.error("Missing token");
   }
-  console.log("Token:", token);
   return token;
 };
-
-// const products: Product[] = [
-//   {
-//     id: 1,
-//     name: "TRÀ ĐÀO HỒNG ĐÀI",
-//     size: "Size L",
-//     description: "Đá bình thường, Ngọt bình thường",
-//     price: 64000,
-//     quantity: 1,
-//     image: "https://cdn.shopify.com/s/files/1/0537/9997/files/tra_dao_bao_nhieu_calo_cach_uong_tra_dao_khong_bi_tang_can_1_480x480.jpg?v=1695697682"
-//   },
-//   {
-//     id: 2,
-//     name: "TRÀ VẢI",
-//     size: "Size L",
-//     description: "Ngọt bình thường, Đá bình thường",
-//     price: 54000,
-//     quantity: 1,
-//     image: "https://micaynagathuduc.com/wp-content/uploads/2022/07/sinh-to-vai-osterberg.jpg"
-//   },
-//   {
-//     id: 3,
-//     name: "TRÀ CÓC",
-//     size: "Size L",
-//     description: "Ngọt bình thường, Ít đá",
-//     price: 69000,
-//     quantity: 1,
-//     image: "https://katinat.vn/wp-content/uploads/2024/04/432783099_402994675762732_8827534077984566267_n.jpg"
-//   }
-// ];
 
 const CartScreen: React.FC = () => {
   const [cart, setCart] = useState<CartData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [quantity, setQuantity] = useState<number>(1);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<CartScreenNavigationProp>();
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Animation refs
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
   const fetchCart = async () => {
     try {
       const token = await getAuthToken();
+      if (!token) {
+        throw new Error("Không tìm thấy token xác thực");
+      }
+
       const response = await fetch(`${API_BASE_URL}/cart`, {
         method: "GET",
         headers: {
@@ -105,21 +79,28 @@ const CartScreen: React.FC = () => {
       });
 
       const data = await response.json();
-      console.log("API Response:", data);
 
       if (response.ok || response.status === 404) {
         setCart(data);
+        if (!data?.items?.length) {
+          Toast.show({
+            type: "info",
+            text1: "Thông báo",
+            text2: "Bạn chưa có sản phẩm nào trong giỏ hàng 👀",
+            position: "top",
+            visibilityTime: 4000,
+          });
+        }
       } else {
-        Toast.show({
-          type: "info",
-          text1: "Thông báo",
-          text2: "Bạn chưa có sản phẩm nào trong giỏ hàng 👀",
-          position: "top",
-          visibilityTime: 4000,
-        });
+        throw new Error(data.message || "Không thể tải giỏ hàng");
       }
     } catch (error) {
       console.error("Error fetching cart:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể tải giỏ hàng. Vui lòng thử lại!",
+      });
     } finally {
       setLoading(false);
     }
@@ -133,24 +114,33 @@ const CartScreen: React.FC = () => {
         navigation.navigate('Login');
       } else {
         setIsLoggedIn(true);
-        fetchCart(); 
+        fetchCart();
       }
     };
-  
+
     checkLoginStatus();
   }, [navigation]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isLoggedIn) {
+        fetchCart();
+      }
+    }, [isLoggedIn])
+  );
 
   const calculateTotalAmount = () => {
     if (!cart?.items || cart.items.length === 0) return 0;
 
-    return cart?.items.reduce((total, item) => {
-      const itemPrice = (item.productId.price[item.size] +
-        item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)
-      ) * item.quantity;
+    return cart.items.reduce((total, item) => {
+      const itemPrice =
+        (item.productId.price[item.size] +
+          item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)) *
+        item.quantity;
 
       return total + itemPrice;
-    }, 0)
-  }
+    }, 0);
+  };
 
   const removeFromCart = async (itemId: string) => {
     try {
@@ -164,21 +154,29 @@ const CartScreen: React.FC = () => {
         }
       });
 
-      const data = await response.json();
-      console.log("Kết quả API:", data);
-
       if (!response.ok) {
-        throw new Error(`Lỗi API: ${data.message || "Không thể xóa sản phẩm"}`);
+        const data = await response.json();
+        throw new Error(data.message || "Không thể xóa sản phẩm");
       }
 
-      fetchCart(); // Tải lại giỏ hàng sau khi xóa
+      fetchCart();
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Sản phẩm đã được xóa khỏi giỏ hàng!",
+      });
     } catch (error) {
       console.error("Lỗi khi xóa sản phẩm:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể xóa sản phẩm. Vui lòng thử lại!",
+      });
     }
   };
 
   const updateQuantity = async (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return; // Không cho giảm xuống 0
+    if (newQuantity < 1) return;
 
     try {
       const token = await getAuthToken();
@@ -196,9 +194,14 @@ const CartScreen: React.FC = () => {
         throw new Error("Không thể cập nhật số lượng sản phẩm");
       }
 
-      fetchCart(); // Cập nhật lại giỏ hàng sau khi thay đổi số lượng
+      fetchCart();
     } catch (error) {
       console.error("Lỗi khi cập nhật số lượng:", error);
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Không thể cập nhật số lượng. Vui lòng thử lại!",
+      });
     }
   };
 
@@ -206,6 +209,40 @@ const CartScreen: React.FC = () => {
     setRefreshing(true);
     await fetchCart();
     setRefreshing(false);
+  };
+
+  // Animation for modal
+  const openModal = () => {
+    setModalVisible(true);
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setModalVisible(false));
   };
 
   if (loading) {
@@ -220,7 +257,7 @@ const CartScreen: React.FC = () => {
   return (
     <View style={{ flex: 1, paddingBottom: 100 }}>
       <FlatList
-        data={cart?.items || []} // Dữ liệu giỏ hàng
+        data={cart?.items || []}
         keyExtractor={(item) => item._id}
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -229,15 +266,6 @@ const CartScreen: React.FC = () => {
             <Text style={styles.header}>Giỏ hàng</Text>
             <View style={styles.infoContainer}>
               <Text style={styles.infoText}>Bạn có {cart?.items.length || 0} sản phẩm trong giỏ hàng</Text>
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <Button
-                title="Tải lại Giỏ hàng"
-                onPress={fetchCart}
-                disabled={loading}
-                color="#4e9eed"
-              />
             </View>
           </>
         }
@@ -253,7 +281,7 @@ const CartScreen: React.FC = () => {
                 { backgroundColor: cart?.items.length ? "#7EA172" : "#ccc" }
               ]}
               onPress={() => navigation.navigate("OrderScreen")}
-              disabled={!cart?.items.length}// khi giỏ hàng trống không cho ấn tiếp tục
+              disabled={!cart?.items.length}
             >
               <Text style={styles.continueText}>Tiếp tục</Text>
             </TouchableOpacity>
@@ -263,7 +291,7 @@ const CartScreen: React.FC = () => {
           item.productId ? (
             <TouchableOpacity
               onPress={() => {
-                console.log("Navigating with:", JSON.stringify({
+                navigation.navigate("ProductDetailScreen", {
                   productId: item.productId._id,
                   cartItem: {
                     size: item.size,
@@ -282,52 +310,24 @@ const CartScreen: React.FC = () => {
                     cartItemId: item._id,
                   },
                   isEditing: true,
-                }, null, 2));
-
-                navigation.navigate("ProductDetailScreen", {
-                  productId: item.productId._id,
-                  cartItem: {
-                    size: item.size,
-                    iceLevel: item.iceLevel,
-                    sweetLevel: item.sweetLevel,
-                    toppings: item.toppings.map((topping) => ({
-                      toppingId: {
-                        _id: topping.toppingId._id,
-                        name: topping.toppingId.name,
-                        price: topping.toppingId.price
-                      },
-                      _id: topping._id,
-                      quantity: topping.quantity
-                    })),
-                    quantity: item.quantity,
-                    cartItemId: item._id, // ID của item trong giỏ hàng để cập nhật
-                  },
-                  isEditing: true, // ✅ Đánh dấu là đang chỉnh sửa
                 });
               }}
             >
               <View style={styles.productContainer}>
                 <Image source={{ uri: item.productId.imageUrl }} style={styles.productImage} />
                 <View style={styles.productDetails}>
-
-
                   <Text style={styles.productName}>{item.productId.name}</Text>
                   <Text style={styles.productSize}>Size {item.size}</Text>
-
-                  {/* Nút Xóa (icon X) */}
                   <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => {
                       setSelectedItem(item._id);
-                      console.log("ID là:", item._id);
-                      setModalVisible(true);
+                      openModal();
                     }}
                   >
                     <AntDesign name="closecircleo" size={24} color="#c23a41" />
                   </TouchableOpacity>
-
                   <Text style={styles.productDescription}>Đá: {item.iceLevel}, Đường: {item.sweetLevel}</Text>
-
                   {item.toppings.map((topping, index) => (
                     <View key={topping?._id || index} style={styles.toppingContainer}>
                       {topping?.toppingId ? (
@@ -339,13 +339,11 @@ const CartScreen: React.FC = () => {
                       )}
                     </View>
                   ))}
-
                   <View style={{ flex: 1 }} />
                   <View style={[styles.bottomContainer, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
                     <Text style={styles.productPrice}>
                       {((item.productId.price[item.size] + item.toppings.reduce((sum, topping) => sum + topping.toppingId.price * topping.quantity, 0)) * item.quantity).toLocaleString("vi-VN")}đ
                     </Text>
-
                     <View style={styles.quantityControl}>
                       <TouchableOpacity onPress={() => updateQuantity(item._id, item.quantity - 1)}>
                         <AntDesign name="minuscircleo" size={24} color="black" />
@@ -356,52 +354,65 @@ const CartScreen: React.FC = () => {
                       </TouchableOpacity>
                     </View>
                   </View>
-
-                  {/* Modal Xác nhận Xóa */}
-                  <Modal visible={modalVisible} transparent animationType="slide">
-                    <View style={styles.modalContainer}>
-                      <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Xóa sản phẩm này?</Text>
-                        <View style={styles.modalButtons}>
-                          <Button title="Hủy" onPress={() => setModalVisible(false)} />
-                          <Button
-                            title="OK"
-                            onPress={() => {
-                              if (selectedItem) {
-                                removeFromCart(selectedItem);
-                              }
-                              setModalVisible(false);
-                            }}
-                            color="red"
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  </Modal>
                 </View>
               </View>
             </TouchableOpacity>
-
           ) : (
             <Text style={{ color: "red" }}>Lỗi: Sản phẩm không tồn tại!</Text>
           )
         }
       />
+      {/* Custom Delete Confirmation Modal */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="none"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                transform: [{ scale: scaleAnim }],
+                opacity: opacityAnim,
+              },
+            ]}
+          >
+            <Text style={styles.modalTitle}>Xóa sản phẩm này?</Text>
+            <Text style={styles.modalMessage}>
+              Bạn có chắc muốn xóa sản phẩm khỏi giỏ hàng?
+            </Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={closeModal}
+              >
+                <Text style={styles.modalButtonText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deletemodalButton]}
+                onPress={() => {
+                  if (selectedItem) {
+                    removeFromCart(selectedItem);
+                  }
+                  closeModal();
+                }}
+              >
+                <Text style={styles.modalButtonText}>Xóa</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    //flex: 1,
     backgroundColor: "#F5F5F5",
     paddingBottom: 100,
-  },
-  buttonContainer: {
-    marginHorizontal: 90,
-    borderRadius: 8,
-    overflow: "hidden",
-    marginBottom: 20
   },
   header: {
     fontSize: 18,
@@ -456,7 +467,6 @@ const styles = StyleSheet.create({
     color: "#666"
   },
   bottomContainer: {
-
     paddingTop: 5,
     marginTop: 5,
   },
@@ -517,26 +527,60 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
   },
-  modalContainer: {
+  // Modal Styles
+  modalOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
     backgroundColor: "#fff",
+    borderRadius: 16,
     padding: 20,
-    borderRadius: 10,
-    width: "80%",
+    width: "85%",
+    maxWidth: 350,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    alignItems: "center",
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#333",
     marginBottom: 10,
   },
-  modalButtons: {
+  modalMessage: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalButtonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    width: "100%",
+  },
+  cancelButton: {
+    backgroundColor: "#757575",  
+  },
+  deletemodalButton: {
+    backgroundColor: "#ff4444",  
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginHorizontal: 5,  
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 

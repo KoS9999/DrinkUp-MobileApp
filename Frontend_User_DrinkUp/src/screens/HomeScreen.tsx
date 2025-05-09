@@ -7,7 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useFonts } from 'expo-font';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import socket from '../config/socket';
 import ProductCarousel from '../components/ProductCarousel';
 import CategoriesComponent from '../components/CategoriesComponent';
 import CategoryProductList from '../components/CategoryProductList';
@@ -198,18 +198,6 @@ const HomeScreen = () => {
                 )}
                 <MaterialIcons name="notifications-on" size={24} color="#6E3816" style={{position: "absolute", right: -80}} />
               </View> 
-
-              <View>
-              <TouchableOpacity onPress={openSearchScreen} activeOpacity={1}>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Tìm kiếm và lọc sản phẩm..."
-                  placeholderTextColor="#999"
-                  editable={false} 
-                  //onChangeText={handleSearch} // Hàm xử lý khi nhập nội dung tìm kiếm
-                />
-              </TouchableOpacity>
-              </View>
             </View>
 
           </View>

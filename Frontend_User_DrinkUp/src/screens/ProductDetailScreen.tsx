@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, TextInput, StyleSheet, ScrollView } from "react-native";
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, TextInput, StyleSheet, ScrollView, BackHandler } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { AntDesign } from "@expo/vector-icons";
 import { useFonts } from 'expo-font';
@@ -137,6 +137,20 @@ const ProductDetailScreen: React.FC = () => {
 
         setTotalPrice((sizePrice + toppingPrice) * quantity);
     }, [selectedSize, selectedTopping, quantity, product]);
+    useEffect(() => {
+          const backAction = () => {
+            navigation.goBack();
+            return true;
+          };
+      
+          const backHandler = BackHandler.addEventListener(
+            'hardwareBackPress',
+            backAction
+          );
+      
+          return () => backHandler.remove();
+        }, []);
+    
 
     const handleToppingPress = (topping: { _id: string; name: string }) => {
         setSelectedTopping((prev) => {
