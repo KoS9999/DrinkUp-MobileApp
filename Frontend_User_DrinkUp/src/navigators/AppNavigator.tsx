@@ -77,14 +77,14 @@ export type RootStackParamList = {
 
   CartScreen: undefined;
   MapScreen: undefined;
-  OrderScreen: {
-    deliveryAddress: string;
-    deliveryCoordinates: {
-      latitude: number;
-      longitude: number;
-    };
-    shippingDetails: any;
-  };
+  OrderScreen: undefined | {
+        deliveryAddress?: string;
+        deliveryCoordinates?: {
+          latitude: number;
+          longitude: number;
+        };
+        shippingDetails?: any;
+      };
   QRCodeScreen: {
     qrContent: string;
   };
