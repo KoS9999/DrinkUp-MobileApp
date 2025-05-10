@@ -5,6 +5,8 @@ import '../config.dart';
 import 'dart:async';
 
 class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
   @override
   _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
 }
@@ -53,7 +55,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return '$minutes:$seconds';
   }
 
-  List<FocusNode> _otpFocusNodes = List.generate(6, (index) => FocusNode());
+  final List<FocusNode> _otpFocusNodes = List.generate(6, (index) => FocusNode());
 
   bool _isLoading = false;
   bool _obscurePassword = true;

@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 
 class IntroScreen extends StatefulWidget {
+  const IntroScreen({super.key});
+
   @override
   _IntroScreenState createState() => _IntroScreenState();
 }
@@ -131,7 +133,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   ),
                 ),
                 SizedBox(height: 40),
-                Container(
+                SizedBox(
                   height: 300,
                   child: PageView.builder(
                     controller: _pageController,
@@ -197,7 +199,7 @@ class TeamMemberCard extends StatelessWidget {
   final String role;
   final String image;
 
-  const TeamMemberCard({
+  const TeamMemberCard({super.key, 
     required this.name,
     required this.role,
     required this.image,

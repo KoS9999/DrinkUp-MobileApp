@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }

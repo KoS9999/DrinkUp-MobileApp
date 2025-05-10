@@ -9,6 +9,8 @@ import 'dart:io';
 import '../config.dart';
 
 class ProductScreen extends StatefulWidget {
+  const ProductScreen({super.key});
+
   @override
   _ProductScreenState createState() => _ProductScreenState();
 }
@@ -277,28 +279,28 @@ class _ProductScreenState extends State<ProductScreen> {
   //endregion
 
   void _showProductForm({dynamic product}) {
-    final _formKey = GlobalKey<FormState>();
-    final _nameController = TextEditingController(text: product?['name']);
-    final _descController = TextEditingController(
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: product?['name']);
+    final descController = TextEditingController(
       text: product?['description'],
     );
-    final _priceSController = TextEditingController(
+    final priceSController = TextEditingController(
       text: product?['price']?['S']?.toString() ?? '',
     );
-    final _priceMController = TextEditingController(
+    final priceMController = TextEditingController(
       text: product?['price']?['M']?.toString() ?? '',
     );
-    final _priceLController = TextEditingController(
+    final priceLController = TextEditingController(
       text: product?['price']?['L']?.toString() ?? '',
     );
-    String? _selectedCategory =
+    String? selectedCategory =
         product != null
             ? (product['category'] is Map<String, dynamic>
                 ? product['category']['_id'].toString()
                 : product['category'].toString())
             : null;
 
-    List<String> _selectedToppings = List.from(
+    List<String> selectedToppings = List.from(
       product?['toppings']?.map((t) => t['_id']) ?? [],
     );
     _currentImageUrl = product?['imageUrl'];
@@ -324,18 +326,18 @@ class _ProductScreenState extends State<ProductScreen> {
                   ),
                   content: SingleChildScrollView(
                     child: Form(
-                      key: _formKey,
+                      key: formKey,
                       child: Column(
                         children: [
                           _buildImageSection(setState, product),
                           SizedBox(height: 20),
                           _buildTextFormField(
-                            _nameController,
+                            nameController,
                             'Tên sản phẩm',
                             validator: (value) => _validateRequired(value),
                           ),
                           _buildTextFormField(
-                            _descController,
+                            descController,
                             'Mô tả',
                             maxLines: 3,
                           ),
@@ -357,17 +359,17 @@ class _ProductScreenState extends State<ProductScreen> {
                                   children: [
                                     _buildPriceField(
                                       'Size S',
-                                      _priceSController,
+                                      priceSController,
                                     ),
                                     SizedBox(width: 10),
                                     _buildPriceField(
                                       'Size M',
-                                      _priceMController,
+                                      priceMController,
                                     ),
                                     SizedBox(width: 10),
                                     _buildPriceField(
                                       'Size L',
-                                      _priceLController,
+                                      priceLController,
                                     ),
                                   ],
                                 ),
@@ -376,12 +378,12 @@ class _ProductScreenState extends State<ProductScreen> {
                           ),
                           SizedBox(height: 15),
                           _buildCategoryDropdown(
-                            _selectedCategory,
+                            selectedCategory,
                             setState,
-                            (newValue) => _selectedCategory = newValue,
+                            (newValue) => selectedCategory = newValue,
                           ),
                           SizedBox(height: 15),
-                          _buildToppingsSelection(_selectedToppings, setState),
+                          _buildToppingsSelection(selectedToppings, setState),
                         ],
                       ),
                     ),
@@ -397,14 +399,14 @@ class _ProductScreenState extends State<ProductScreen> {
                           _isSubmitting
                               ? null
                               : () => _handleFormSubmission(
-                                _formKey,
-                                _nameController,
-                                _descController,
-                                _priceSController,
-                                _priceMController,
-                                _priceLController,
-                                _selectedCategory!,
-                                _selectedToppings,
+                                formKey,
+                                nameController,
+                                descController,
+                                priceSController,
+                                priceMController,
+                                priceLController,
+                                selectedCategory!,
+                                selectedToppings,
                                 product?['_id'],
                               ),
                       style: ElevatedButton.styleFrom(

@@ -5,6 +5,8 @@ import '../config.dart';
 import 'dart:async';
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
@@ -21,7 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     6,
     (index) => TextEditingController(),
   );
-  List<FocusNode> _otpFocusNodes = List.generate(6, (index) => FocusNode());
+  final List<FocusNode> _otpFocusNodes = List.generate(6, (index) => FocusNode());
 
   bool _isLoading = false;
   bool _obscurePassword = true;
