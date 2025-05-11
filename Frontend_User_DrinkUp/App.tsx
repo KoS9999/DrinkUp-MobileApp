@@ -2,6 +2,7 @@ import React from "react";
 import AppNavigator from "./src/navigators/AppNavigator";
 import Toast, { BaseToast, ErrorToast, ToastConfigParams } from "react-native-toast-message";
 import SocketListener from "./src/components/SocketListener";
+import 'react-native-get-random-values';
 const toastConfig = {
   success: (props: ToastConfigParams<{ text1: string; text2?: string }>) => (
     <BaseToast

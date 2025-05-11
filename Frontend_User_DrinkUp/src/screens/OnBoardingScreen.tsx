@@ -47,7 +47,7 @@ const OnBoardingScreen: React.FC<OnBoardingScreenProps> = ({ navigation }) => {
           <View style={styles.buttons}>
             <TouchableOpacity
               style={styles.skipButton}
-              onPress={() => navigation.replace('Login')}
+              onPress={() => navigation.replace('HomeScreen')}
             >
               <Text style={styles.buttonText}>Skip</Text>
             </TouchableOpacity>
@@ -61,7 +61,7 @@ const OnBoardingScreen: React.FC<OnBoardingScreenProps> = ({ navigation }) => {
             ) : (
               <TouchableOpacity
                 style={styles.nextButton}
-                onPress={() => navigation.replace('Login')}
+                onPress={() => navigation.replace('HomeScreen')}
               >
                 <Text style={styles.buttonText}>Get Started</Text>
               </TouchableOpacity>

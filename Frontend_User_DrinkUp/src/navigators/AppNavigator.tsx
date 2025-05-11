@@ -30,6 +30,8 @@ import FooterNavigation from "../components/FooterNavigation";
 import { Product } from "../models/Product";
 import ViewedProductsScreen from "../screens/ViewedProductsScreen";
 import PaymentWebView from '../screens/PaymentWebView';
+import MapScreen from "../screens/MapScreen";
+import QRCodeScreen from "../screens/QRCodeScreen";
 
 export type RootStackParamList = {
   SplashScreen: undefined;
@@ -74,7 +76,18 @@ export type RootStackParamList = {
   };
 
   CartScreen: undefined;
-  OrderScreen: undefined;
+  MapScreen: undefined;
+  OrderScreen: undefined | {
+        deliveryAddress?: string;
+        deliveryCoordinates?: {
+          latitude: number;
+          longitude: number;
+        };
+        shippingDetails?: any;
+      };
+  QRCodeScreen: {
+    qrContent: string;
+  };
 };
 
 export type TabParamList = {
@@ -199,7 +212,8 @@ export default function AppNavigator() {
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="PolicyScreen" component={PolicyScreen} />
           <Stack.Screen name="PaymentWebView" component={PaymentWebView} options={{ title: 'Thanh toán' }} />
-
+          <Stack.Screen name="MapScreen" component={MapScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </CartProvider>

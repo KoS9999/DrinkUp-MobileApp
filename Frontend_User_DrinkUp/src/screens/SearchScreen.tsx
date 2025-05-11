@@ -47,19 +47,7 @@ const SearchScreen = () => {
     fetchProducts();
   }, [sortBy, orderBy, selectedCategory]);
   
-    useEffect(() => {
-      const backAction = () => {
-        navigation.goBack();
-        return true;
-      };
-  
-      const backHandler = BackHandler.addEventListener(
-        'hardwareBackPress',
-        backAction
-      );
-  
-      return () => backHandler.remove();
-    }, []);
+
 
   const fetchCategories = async () => {
     try {
@@ -248,7 +236,7 @@ const SearchScreen = () => {
   );
 };
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 40, paddingBottom: 40 },
+  container: { flex: 1, paddingTop: 40, paddingBottom: 75 },
   searchBar: { flexDirection: "row", alignItems: "center", marginBottom: 10, marginHorizontal: 20,},
   searchInputContainer: { flex: 1, position: "relative", },
   searchInput: { height: 40, borderWidth: 1, borderColor: "#ccc", borderRadius: 15, paddingHorizontal: 20, backgroundColor: "#fff", },

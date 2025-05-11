@@ -1,0 +1,1 @@
+ D:\\TotNghiep\\DrinkUp-MobileApp\\frontend_admin_drinkup\\.dart_tool\\flutter_build\\7e03475a274bace6d80898aca263135e\\native_assets.json: 
