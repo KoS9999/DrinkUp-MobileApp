@@ -85,7 +85,7 @@ flutter run
 ## 📌 Ghi chú
 
 - Dự án đang trong giai đoạn học tập và thử nghiệm, sẽ được tiếp tục hoàn thiện và tối ưu trong tương lai.
-- Giao diện hiện tại đơn giản, nhưng đã hỗ trợ các chức năng chính: đăng nhập/đăng ký, giỏ hàng, thanh toán, quản lý đơn hàng, chọn địa chỉ tính phí ship và tích hợp VNPAY.
+- Giao diện hiện tại đơn giản, nhưng đã hỗ trợ các chức năng chính: đăng nhập/đăng ký, giỏ hàng, thanh toán, quản lý đơn hàng, chọn địa chỉ tính phí ship và tích hợp ZaloPAY.
 
 ---
 
