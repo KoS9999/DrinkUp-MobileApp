@@ -91,6 +91,6 @@ flutter run
 
 ## 📄 Tác giả
 
-**Nhóm sinh viên phát triển ứng dụng DRinkUp**  
-Nguyễn Hoàng Phương Ngân
-Ngô Ngọc Thông
+**Nhóm sinh viên phát triển ứng dụng DrinkUp**  
+- Nguyễn Hoàng Phương Ngân
+- Ngô Ngọc Thông
